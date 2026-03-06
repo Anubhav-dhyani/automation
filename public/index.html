@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Generator - Admission Letters</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      min-height: 100vh;
+      color: #e0e0e0;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #f7971e, #ffd200);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: #9a9ab0;
+      font-size: 15px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card h2 .step {
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+      color: #1a1a2e;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .upload-zone {
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .upload-zone:hover {
+      border-color: #f7971e;
+      background: rgba(247, 151, 30, 0.05);
+    }
+
+    .upload-zone.has-file {
+      border-color: #4caf50;
+      background: rgba(76, 175, 80, 0.08);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-zone .icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    .upload-zone .label {
+      font-size: 14px;
+      color: #9a9ab0;
+    }
+
+    .upload-zone .filename {
+      font-size: 14px;
+      color: #4caf50;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    .upload-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* Column mapping */
+    .mapping-section {
+      display: none;
+    }
+
+    .mapping-section.visible {
+      display: block;
+    }
+
+    .mapping-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .mapping-item label {
+      display: block;
+      font-size: 13px;
+      color: #b0b0c8;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .mapping-item select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e0e0e0;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .mapping-item select:focus {
+      border-color: #f7971e;
+    }
+
+    .mapping-item select option {
+      background: #2a2a4a;
+      color: #e0e0e0;
+    }
+
+    /* Preview table */
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 13px;
+    }
+
+    .preview-table th {
+      background: rgba(247, 151, 30, 0.15);
+      color: #ffd200;
+      padding: 8px 12px;
+      text-align: left;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .preview-table td {
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: #c0c0d0;
+    }
+
+    .preview-info {
+      font-size: 14px;
+      color: #9a9ab0;
+      margin-bottom: 12px;
+    }
+
+    .preview-info strong {
+      color: #ffd200;
+    }
+
+    /* Generate button */
+    .btn-generate {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+      color: #1a1a2e;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-generate:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(247, 151, 30, 0.3);
+    }
+
+    .btn-generate:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Progress */
+    .progress-section {
+      display: none;
+      text-align: center;
+    }
+
+    .progress-section.visible {
+      display: block;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #f7971e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-text {
+      font-size: 15px;
+      color: #b0b0c8;
+    }
+
+    /* Result */
+    .result-section {
+      display: none;
+      text-align: center;
+    }
+
+    .result-section.visible {
+      display: block;
+    }
+
+    .result-success {
+      color: #4caf50;
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .result-msg {
+      font-size: 16px;
+      color: #b0b0c8;
+    }
+
+    /* Error */
+    .error-msg {
+      display: none;
+      background: rgba(244, 67, 54, 0.15);
+      border: 1px solid rgba(244, 67, 54, 0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #ff6b6b;
+      font-size: 14px;
+      margin-top: 16px;
+    }
+
+    .error-msg.visible {
+      display: block;
+    }
+
+    @media (max-width: 600px) {
+      .upload-row, .mapping-grid {
+        grid-template-columns: 1fr;
+      }
+      .container { padding: 20px 12px; }
+      header h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Admission Letter Generator</h1>
+      <p>Upload your PDF template & Excel data to generate personalized admission letters</p>
+    </header>
+
+    <!-- Step 1: Upload Files -->
+    <div class="card">
+      <h2><span class="step">1</span> Upload Files</h2>
+      <div class="upload-row">
+        <div class="upload-zone" id="pdfZone">
+          <div class="icon">📄</div>
+          <div class="label">PDF Template</div>
+          <div class="filename" id="pdfFilename"></div>
+          <input type="file" id="pdfInput" accept=".pdf">
+        </div>
+        <div class="upload-zone" id="excelZone">
+          <div class="icon">📊</div>
+          <div class="label">Excel Data File</div>
+          <div class="filename" id="excelFilename"></div>
+          <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Map Columns -->
+    <div class="card mapping-section" id="mappingSection">
+      <h2><span class="step">2</span> Map Excel Columns</h2>
+      <div class="preview-info" id="previewInfo"></div>
+      <div class="mapping-grid">
+        <div class="mapping-item">
+          <label>Name Column *</label>
+          <select id="nameCol"></select>
+        </div>
+        <div class="mapping-item">
+          <label>Course Column</label>
+          <select id="courseCol"></select>
+        </div>
+        <div class="mapping-item">
+          <label>GECET Score Column</label>
+          <select id="scoreCol"></select>
+        </div>
+        <div class="mapping-item">
+          <label>Scholarship Column</label>
+          <select id="scholarshipCol"></select>
+        </div>
+      </div>
+
+      <!-- Sample data preview -->
+      <div id="previewTableWrap"></div>
+    </div>
+
+    <!-- Step 3: Generate -->
+    <div class="card" id="generateSection" style="display:none;">
+      <h2><span class="step">3</span> Generate PDFs</h2>
+      <button class="btn-generate" id="generateBtn" disabled>
+        <span>⚡</span> Generate All PDFs & Download ZIP
+      </button>
+      <div class="error-msg" id="errorMsg"></div>
+
+      <div class="progress-section" id="progressSection">
+        <div class="spinner"></div>
+        <div class="progress-text">Generating personalized PDFs... Please wait.</div>
+      </div>
+
+      <div class="result-section" id="resultSection">
+        <div class="result-success">✅</div>
+        <div class="result-msg" id="resultMsg">All PDFs generated and downloaded!</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const pdfInput = document.getElementById('pdfInput');
+    const excelInput = document.getElementById('excelInput');
+    const pdfZone = document.getElementById('pdfZone');
+    const excelZone = document.getElementById('excelZone');
+    const pdfFilename = document.getElementById('pdfFilename');
+    const excelFilename = document.getElementById('excelFilename');
+    const mappingSection = document.getElementById('mappingSection');
+    const generateSection = document.getElementById('generateSection');
+    const generateBtn = document.getElementById('generateBtn');
+    const progressSection = document.getElementById('progressSection');
+    const resultSection = document.getElementById('resultSection');
+    const resultMsg = document.getElementById('resultMsg');
+    const errorMsg = document.getElementById('errorMsg');
+    const previewInfo = document.getElementById('previewInfo');
+    const previewTableWrap = document.getElementById('previewTableWrap');
+
+    let excelData = null;
+    let pdfReady = false;
+
+    // File input handlers
+    pdfInput.addEventListener('change', () => {
+      if (pdfInput.files.length) {
+        pdfFilename.textContent = pdfInput.files[0].name;
+        pdfZone.classList.add('has-file');
+        pdfReady = true;
+        checkReady();
+      }
+    });
+
+    excelInput.addEventListener('change', async () => {
+      if (excelInput.files.length) {
+        excelFilename.textContent = excelInput.files[0].name;
+        excelZone.classList.add('has-file');
+        await loadExcelPreview();
+      }
+    });
+
+    async function loadExcelPreview() {
+      const formData = new FormData();
+      formData.append('excel', excelInput.files[0]);
+
+      try {
+        const res = await fetch('/preview-columns', { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        if (data.error) {
+          showError(data.error);
+          return;
+        }
+
+        excelData = data;
+        previewInfo.innerHTML = `Found <strong>${data.rowCount}</strong> records with <strong>${data.columns.length}</strong> columns`;
+
+        // Populate dropdowns
+        const selects = ['nameCol', 'courseCol', 'scoreCol', 'scholarshipCol'];
+        const autoKeys = ['name', 'course', 'score', 'scholarship'];
+
+        selects.forEach((selId, idx) => {
+          const sel = document.getElementById(selId);
+          sel.innerHTML = '<option value="">-- Select --</option>';
+          data.columns.forEach(col => {
+            const opt = document.createElement('option');
+            opt.value = col;
+            opt.textContent = col;
+            if (data.autoDetected[autoKeys[idx]] === col) opt.selected = true;
+            sel.appendChild(opt);
+          });
+        });
+
+        // Build preview table
+        if (data.sampleRows.length > 0) {
+          let html = '<table class="preview-table"><thead><tr>';
+          data.columns.forEach(col => { html += `<th>${col}</th>`; });
+          html += '</tr></thead><tbody>';
+          data.sampleRows.forEach(row => {
+            html += '<tr>';
+            data.columns.forEach(col => { html += `<td>${row[col] ?? ''}</td>`; });
+            html += '</tr>';
+          });
+          html += '</tbody></table>';
+          previewTableWrap.innerHTML = html;
+        }
+
+        mappingSection.classList.add('visible');
+        generateSection.style.display = 'block';
+        checkReady();
+
+      } catch (err) {
+        showError('Failed to preview Excel file: ' + err.message);
+      }
+    }
+
+    function checkReady() {
+      const nameSelected = document.getElementById('nameCol').value;
+      generateBtn.disabled = !(pdfReady && excelData && nameSelected);
+    }
+
+    // Listen for mapping changes
+    ['nameCol', 'courseCol', 'scoreCol', 'scholarshipCol'].forEach(id => {
+      document.getElementById(id).addEventListener('change', checkReady);
+    });
+
+    // Generate button handler
+    generateBtn.addEventListener('click', async () => {
+      const nameCol = document.getElementById('nameCol').value;
+      const courseCol = document.getElementById('courseCol').value;
+      const scoreCol = document.getElementById('scoreCol').value;
+      const scholarshipCol = document.getElementById('scholarshipCol').value;
+
+      if (!nameCol) {
+        showError('Please select the Name column mapping.');
+        return;
+      }
+
+      hideError();
+      generateBtn.disabled = true;
+      progressSection.classList.add('visible');
+      resultSection.classList.remove('visible');
+
+      try {
+        const formData = new FormData();
+        formData.append('template', pdfInput.files[0]);
+        formData.append('excel', excelInput.files[0]);
+        formData.append('nameCol', nameCol);
+        formData.append('courseCol', courseCol);
+        formData.append('scoreCol', scoreCol);
+        formData.append('scholarshipCol', scholarshipCol);
+
+        const response = await fetch('/generate-mapped', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({ error: 'Server error' }));
+          throw new Error(err.error || 'Generation failed');
+        }
+
+        // Download the ZIP
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'generated_pdfs.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
+        progressSection.classList.remove('visible');
+        resultSection.classList.add('visible');
+        resultMsg.textContent = `Successfully generated ${excelData.rowCount} personalized PDFs!`;
+
+      } catch (err) {
+        progressSection.classList.remove('visible');
+        showError(err.message);
+      } finally {
+        generateBtn.disabled = false;
+      }
+    });
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('visible');
+    }
+
+    function hideError() {
+      errorMsg.classList.remove('visible');
+    }
+  </script>
+</body>
+</html>
