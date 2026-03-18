@@ -385,6 +385,63 @@
         <div class="result-msg" id="resultMsg">All PDFs generated and downloaded!</div>
       </div>
     </div>
+
+    <!-- ===================== NEW FEATURE (separate section) ===================== -->
+    <div class="card" id="enrichCard">
+      <h2><span class="step">A</span> Enrich Excel (Academic Session)</h2>
+      <p style="color:#9a9ab0; font-size:14px; margin-bottom:14px;">
+        Upload Student Excel + Course Mapping (CSV/XLSX). Output adds: <b>Academic Session</b> and <b>Academic Session Status</b>.
+      </p>
+
+      <div class="upload-row">
+        <div class="upload-zone" id="studentsZone">
+          <div class="icon">🧾</div>
+          <div class="label">Student Excel (xlsx/xls/csv)</div>
+          <div class="filename" id="studentsFilename"></div>
+          <input type="file" id="studentsInput" accept=".xlsx,.xls,.csv">
+        </div>
+
+        <div class="upload-zone" id="mappingZone">
+          <div class="icon">🗂️</div>
+          <div class="label">Course Mapping (CSV/XLSX) with Academic Session</div>
+          <div class="filename" id="mappingFilename"></div>
+          <input type="file" id="mappingInput" accept=".xlsx,.xls,.csv">
+        </div>
+      </div>
+
+      <div id="enrichMappingSection" class="mapping-section" style="margin-top:16px;">
+        <div class="preview-info" id="enrichPreviewInfo"></div>
+
+        <div class="mapping-grid">
+          <div class="mapping-item">
+            <label>Student: Course Column *</label>
+            <select id="studentsCourseCol"></select>
+          </div>
+
+          <div class="mapping-item">
+            <label>Mapping: Course Column *</label>
+            <select id="mappingCourseCol"></select>
+          </div>
+
+          <div class="mapping-item">
+            <label>Mapping: Academic Session Column *</label>
+            <select id="mappingSessionCol"></select>
+          </div>
+        </div>
+
+        <button class="btn-generate" id="enrichBtn" style="margin-top:14px;" disabled>
+          <span>⬇️</span> Download Enriched Excel
+        </button>
+
+        <div class="error-msg" id="enrichErrorMsg"></div>
+
+        <div class="result-section" id="enrichResultSection">
+          <div class="result-success">✅</div>
+          <div class="result-msg" id="enrichResultMsg"></div>
+        </div>
+      </div>
+    </div>
+    <!-- =================== /NEW FEATURE (separate section) =================== -->
   </div>
 
   <script>
@@ -572,6 +629,160 @@
     function hideError() {
       errorMsg.classList.remove('visible');
     }
+
+    // ===================== NEW FEATURE JS =====================
+    const studentsInput = document.getElementById('studentsInput');
+    const mappingInput = document.getElementById('mappingInput');
+    const studentsZone = document.getElementById('studentsZone');
+    const mappingZone = document.getElementById('mappingZone');
+    const studentsFilename = document.getElementById('studentsFilename');
+    const mappingFilename = document.getElementById('mappingFilename');
+
+    const enrichMappingSection = document.getElementById('enrichMappingSection');
+    const enrichPreviewInfo = document.getElementById('enrichPreviewInfo');
+    const enrichBtn = document.getElementById('enrichBtn');
+    const enrichErrorMsg = document.getElementById('enrichErrorMsg');
+    const enrichResultSection = document.getElementById('enrichResultSection');
+    const enrichResultMsg = document.getElementById('enrichResultMsg');
+
+    let studentsPreview = null;
+    let mappingPreview = null;
+
+    function showEnrichError(msg) {
+      enrichErrorMsg.textContent = msg;
+      enrichErrorMsg.classList.add('visible');
+    }
+    function hideEnrichError() {
+      enrichErrorMsg.classList.remove('visible');
+    }
+
+    async function previewGeneric(file) {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/preview-columns-generic', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Preview failed');
+      return data;
+    }
+
+    function fillSelect(selectId, columns, autoPick) {
+      const sel = document.getElementById(selectId);
+      sel.innerHTML = '<option value="">-- Select --</option>';
+      for (const col of columns) {
+        const opt = document.createElement('option');
+        opt.value = col;
+        opt.textContent = col;
+        if (autoPick && autoPick === col) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    }
+
+    function checkEnrichReady() {
+      const a = document.getElementById('studentsCourseCol').value;
+      const b = document.getElementById('mappingCourseCol').value;
+      const c = document.getElementById('mappingSessionCol').value;
+
+      enrichBtn.disabled = !(
+        studentsInput.files.length &&
+        mappingInput.files.length &&
+        studentsPreview &&
+        mappingPreview &&
+        a && b && c
+      );
+    }
+
+    studentsInput.addEventListener('change', async () => {
+      if (!studentsInput.files.length) return;
+
+      studentsFilename.textContent = studentsInput.files[0].name;
+      studentsZone.classList.add('has-file');
+
+      try {
+        hideEnrichError();
+        studentsPreview = await previewGeneric(studentsInput.files[0]);
+
+        fillSelect('studentsCourseCol', studentsPreview.columns, studentsPreview.autoDetected.course || '');
+        enrichPreviewInfo.innerHTML = `Student file: <strong>${studentsPreview.rowCount}</strong> rows, <strong>${studentsPreview.columns.length}</strong> columns`;
+
+        enrichMappingSection.classList.add('visible');
+        checkEnrichReady();
+      } catch (e) {
+        showEnrichError(e.message);
+      }
+    });
+
+    mappingInput.addEventListener('change', async () => {
+      if (!mappingInput.files.length) return;
+
+      mappingFilename.textContent = mappingInput.files[0].name;
+      mappingZone.classList.add('has-file');
+
+      try {
+        hideEnrichError();
+        mappingPreview = await previewGeneric(mappingInput.files[0]);
+
+        fillSelect('mappingCourseCol', mappingPreview.columns, mappingPreview.autoDetected.course || '');
+        fillSelect('mappingSessionCol', mappingPreview.columns, mappingPreview.autoDetected.academicSession || '');
+
+        enrichMappingSection.classList.add('visible');
+        checkEnrichReady();
+      } catch (e) {
+        showEnrichError(e.message);
+      }
+    });
+
+    ['studentsCourseCol', 'mappingCourseCol', 'mappingSessionCol'].forEach(id => {
+      document.getElementById(id).addEventListener('change', checkEnrichReady);
+    });
+
+    enrichBtn.addEventListener('click', async () => {
+      try {
+        hideEnrichError();
+        enrichResultSection.classList.remove('visible');
+        enrichBtn.disabled = true;
+
+        const studentsCourseCol = document.getElementById('studentsCourseCol').value;
+        const mappingCourseCol = document.getElementById('mappingCourseCol').value;
+        const mappingSessionCol = document.getElementById('mappingSessionCol').value;
+
+        const fd = new FormData();
+        fd.append('students', studentsInput.files[0]);
+        fd.append('mapping', mappingInput.files[0]);
+        fd.append('studentsCourseCol', studentsCourseCol);
+        fd.append('mappingCourseCol', mappingCourseCol);
+        fd.append('mappingSessionCol', mappingSessionCol);
+
+        const res = await fetch('/enrich-academic-session', { method: 'POST', body: fd });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Server error' }));
+          throw new Error(err.error || 'Enrich failed');
+        }
+
+        const matched = res.headers.get('X-Matched');
+        const unmatched = res.headers.get('X-Unmatched');
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'students_enriched_academic_session.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
+        enrichResultMsg.textContent = (matched != null && unmatched != null)
+          ? `Done. Matched: ${matched}, Unmatched: ${unmatched}`
+          : 'Done. Downloaded enriched Excel.';
+        enrichResultSection.classList.add('visible');
+      } catch (e) {
+        showEnrichError(e.message);
+      } finally {
+        enrichBtn.disabled = false;
+      }
+    });
+    // ===================== /NEW FEATURE JS =====================
+
   </script>
 </body>
 </html>

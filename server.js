@@ -48,6 +48,133 @@ app.post('/preview-columns', upload.fields([
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────
+// Generic preview (works for XLSX/XLS/CSV). Used by the new feature.
+// ─────────────────────────────────────────────────────────────────────
+app.post('/preview-columns-generic', upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'File is required.' });
+
+    const workbook = XLSX.readFile(file.path);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    fs.unlinkSync(file.path);
+
+    if (!data.length) return res.status(400).json({ error: 'File is empty.' });
+
+    const columns = Object.keys(data[0]);
+
+    res.json({
+      columns,
+      rowCount: data.length,
+      sampleRows: data.slice(0, 3),
+      autoDetected: {
+        course: findColumn(columns, ['course', 'program', 'programme', 'department']) || '',
+        academicSession: findColumn(columns, ['academic session', 'session', 'academic_session']) || '',
+      }
+    });
+  } catch (error) {
+    console.error('preview-columns-generic error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+function normalizeCourseKey(v) {
+  return String(v || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// New feature: enrich student Excel using course->academic session mapping
+// Adds 2 columns: Academic Session, Academic Session Status
+// ─────────────────────────────────────────────────────────────────────
+app.post('/enrich-academic-session', upload.fields([
+  { name: 'students', maxCount: 1 },
+  { name: 'mapping', maxCount: 1 },
+]), async (req, res) => {
+  let studentsFile, mappingFile;
+
+  try {
+    studentsFile = req.files['students']?.[0];
+    mappingFile = req.files['mapping']?.[0];
+    if (!studentsFile || !mappingFile) {
+      return res.status(400).json({ error: 'Both Student file and Course Mapping file are required.' });
+    }
+
+    const { studentsCourseCol, mappingCourseCol, mappingSessionCol } = req.body;
+
+    if (!studentsCourseCol) return res.status(400).json({ error: 'Student Course column is required.' });
+    if (!mappingCourseCol) return res.status(400).json({ error: 'Mapping Course column is required.' });
+    if (!mappingSessionCol) return res.status(400).json({ error: 'Mapping Academic Session column is required.' });
+
+    // Read students
+    const studentsWb = XLSX.readFile(studentsFile.path);
+    const studentsSheetName = studentsWb.SheetNames[0];
+    const studentsSheet = studentsWb.Sheets[studentsSheetName];
+    const studentsRows = XLSX.utils.sheet_to_json(studentsSheet, { defval: '' });
+
+    if (!studentsRows.length) return res.status(400).json({ error: 'Student file is empty.' });
+
+    // Read mapping (CSV or XLSX)
+    const mappingWb = XLSX.readFile(mappingFile.path);
+    const mappingSheet = mappingWb.Sheets[mappingWb.SheetNames[0]];
+    const mappingRows = XLSX.utils.sheet_to_json(mappingSheet, { defval: '' });
+
+    if (!mappingRows.length) return res.status(400).json({ error: 'Course Mapping file is empty.' });
+
+    // Build map: courseKey -> sessionValue
+    const courseToSession = new Map();
+    for (const r of mappingRows) {
+      const key = normalizeCourseKey(r[mappingCourseCol]);
+      const sessionVal = String(r[mappingSessionCol] || '').trim();
+      if (!key) continue;
+      if (!sessionVal) continue;
+      // first wins (avoid random overwrite if duplicates)
+      if (!courseToSession.has(key)) courseToSession.set(key, sessionVal);
+    }
+
+    // Enrich students
+    let matched = 0;
+    let unmatched = 0;
+
+    const outRows = studentsRows.map((r) => {
+      const key = normalizeCourseKey(r[studentsCourseCol]);
+      const session = key ? (courseToSession.get(key) || '') : '';
+
+      const status = session ? 'Matched' : 'Unmatched';
+      if (session) matched++; else unmatched++;
+
+      return {
+        ...r,
+        'Academic Session': session,
+        'Academic Session Status': status,
+      };
+    });
+
+    // Write output workbook
+    const outWb = XLSX.utils.book_new();
+    const outSheet = XLSX.utils.json_to_sheet(outRows);
+    XLSX.utils.book_append_sheet(outWb, outSheet, 'Enriched');
+
+    const buffer = XLSX.write(outWb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="students_enriched_academic_session.xlsx"');
+    res.setHeader('X-Matched', String(matched));
+    res.setHeader('X-Unmatched', String(unmatched));
+    res.send(buffer);
+  } catch (error) {
+    console.error('enrich-academic-session error:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    try { if (studentsFile?.path) fs.unlinkSync(studentsFile.path); } catch {}
+    try { if (mappingFile?.path) fs.unlinkSync(mappingFile.path); } catch {}
+  }
+});
+
 // ─── Generate PDFs with custom column mapping ─────────────────────────
 app.post('/generate-mapped', upload.fields([
   { name: 'template', maxCount: 1 },
