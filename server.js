@@ -53,34 +53,71 @@ app.post('/generate-mapped', upload.fields([
   { name: 'template', maxCount: 1 },
   { name: 'excel', maxCount: 1 }
 ]), async (req, res) => {
+  let templateFile, excelFile;
+
   try {
-    const templateFile = req.files['template']?.[0];
-    const excelFile = req.files['excel']?.[0];
+    templateFile = req.files['template']?.[0];
+    excelFile = req.files['excel']?.[0];
     if (!templateFile || !excelFile) return res.status(400).json({ error: 'Both files are required.' });
 
-    const { nameCol, courseCol, scoreCol, scholarshipCol } = req.body;
+    const { nameCol, courseCol, scoreCol, scholarshipCol, slab } = req.body;
+
     if (!nameCol) return res.status(400).json({ error: 'Name column is required.' });
+
+    // Slab is required for filtering; and courseCol is required to apply slab rules
+    const slabValue = String(slab || '').trim(); // expected: "50k" or "25k"
+    if (!slabValue || !['50k', '25k'].includes(slabValue)) {
+      return res.status(400).json({ error: 'Please select scholarship slab (50k/25k).' });
+    }
+    if (!courseCol) {
+      return res.status(400).json({ error: 'Course column is required when using 50k/25k filtering.' });
+    }
 
     const workbook = XLSX.readFile(excelFile.path);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const data = XLSX.utils.sheet_to_json(sheet);
     const templateBytes = fs.readFileSync(templateFile.path);
 
+    // --- filter rows based on slab + course ---
+    const isBtechOrMca = (courseRaw) => {
+      const c = String(courseRaw || '').trim().toLowerCase();
+
+      // matches: "B.Tech", "BTECH", "B Tech", "B. Tech CSE", etc.
+      const isBtech = /^b\s*\.?\s*tech\b/.test(c);
+      // matches: "MCA", "MCA (AI)", etc.
+      const isMca = /^mca\b/.test(c);
+
+      return isBtech || isMca;
+    };
+
+    const rowsToProcess = data.filter((row) => {
+      const courseVal = row[courseCol];
+      const match = isBtechOrMca(courseVal);
+      return slabValue === '50k' ? match : !match;
+    });
+
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="generated_pdfs.zip"');
+    res.setHeader('X-Generated-Count', String(rowsToProcess.length));
+    res.setHeader('X-Filter-Slab', slabValue);
 
     const archive = archiver('zip', { zlib: { level: 5 } });
+    archive.on('error', (err) => {
+      console.error('Archive error:', err);
+      if (!res.headersSent) res.status(500).json({ error: err.message });
+    });
     archive.pipe(res);
 
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i];
+    for (let i = 0; i < rowsToProcess.length; i++) {
+      const row = rowsToProcess[i];
+
       const name = String(row[nameCol] || '').trim();
       const course = courseCol ? String(row[courseCol] || '').trim() : '';
       const score = scoreCol ? String(row[scoreCol] || '').trim() : '';
       const scholarship = scholarshipCol ? String(row[scholarshipCol] || '').trim() : '';
 
       if (!name) continue;
-      console.log(`[${i + 1}/${data.length}] ${name}`);
+      console.log(`[${i + 1}/${rowsToProcess.length}] ${name} (${slabValue})`);
 
       const pdfBytes = await generatePersonalizedPdf(templateBytes, { name, course, score, scholarship });
       const safeName = name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
@@ -88,11 +125,13 @@ app.post('/generate-mapped', upload.fields([
     }
 
     await archive.finalize();
-    fs.unlinkSync(templateFile.path);
-    fs.unlinkSync(excelFile.path);
   } catch (error) {
     console.error('Error:', error);
     if (!res.headersSent) res.status(500).json({ error: error.message });
+  } finally {
+    // ensure temp files removed even on error
+    try { if (templateFile?.path) fs.unlinkSync(templateFile.path); } catch {}
+    try { if (excelFile?.path) fs.unlinkSync(excelFile.path); } catch {}
   }
 });
 

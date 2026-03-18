@@ -314,10 +314,20 @@
     <!-- Step 1: Upload Files -->
     <div class="card">
       <h2><span class="step">1</span> Upload Files</h2>
+
+      <!-- NEW: Slab selection -->
+      <div class="mapping-item" style="margin-bottom:16px;">
+        <label>Scholarship Slab *</label>
+        <select id="slab">
+          <option value="50k">50k (B.Tech* + MCA only)</option>
+          <option value="25k">25k (All other courses)</option>
+        </select>
+      </div>
+
       <div class="upload-row">
         <div class="upload-zone" id="pdfZone">
           <div class="icon">📄</div>
-          <div class="label">PDF Template</div>
+          <div class="label">PDF Template (for selected slab)</div>
           <div class="filename" id="pdfFilename"></div>
           <input type="file" id="pdfInput" accept=".pdf">
         </div>
@@ -380,6 +390,7 @@
   <script>
     const pdfInput = document.getElementById('pdfInput');
     const excelInput = document.getElementById('excelInput');
+    const slabSelect = document.getElementById('slab');
     const pdfZone = document.getElementById('pdfZone');
     const excelZone = document.getElementById('excelZone');
     const pdfFilename = document.getElementById('pdfFilename');
@@ -472,7 +483,11 @@
 
     function checkReady() {
       const nameSelected = document.getElementById('nameCol').value;
-      generateBtn.disabled = !(pdfReady && excelData && nameSelected);
+      const courseSelected = document.getElementById('courseCol').value;
+      const slab = slabSelect.value;
+
+      // slab requires course mapping for filtering
+      generateBtn.disabled = !(pdfReady && excelData && nameSelected && courseSelected && slab);
     }
 
     // Listen for mapping changes
@@ -486,9 +501,18 @@
       const courseCol = document.getElementById('courseCol').value;
       const scoreCol = document.getElementById('scoreCol').value;
       const scholarshipCol = document.getElementById('scholarshipCol').value;
+      const slab = slabSelect.value;
 
       if (!nameCol) {
         showError('Please select the Name column mapping.');
+        return;
+      }
+      if (!courseCol) {
+        showError('Please select the Course column mapping (needed for 50k/25k filtering).');
+        return;
+      }
+      if (!slab) {
+        showError('Please select scholarship slab (50k/25k).');
         return;
       }
 
@@ -505,18 +529,17 @@
         formData.append('courseCol', courseCol);
         formData.append('scoreCol', scoreCol);
         formData.append('scholarshipCol', scholarshipCol);
+        formData.append('slab', slab);
 
-        const response = await fetch('/generate-mapped', {
-          method: 'POST',
-          body: formData
-        });
+        const response = await fetch('/generate-mapped', { method: 'POST', body: formData });
 
         if (!response.ok) {
           const err = await response.json().catch(() => ({ error: 'Server error' }));
           throw new Error(err.error || 'Generation failed');
         }
 
-        // Download the ZIP
+        const generatedCount = response.headers.get('X-Generated-Count');
+
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -529,7 +552,9 @@
 
         progressSection.classList.remove('visible');
         resultSection.classList.add('visible');
-        resultMsg.textContent = `Successfully generated ${excelData.rowCount} personalized PDFs!`;
+        resultMsg.textContent = generatedCount
+          ? `Generated ${generatedCount} PDFs for slab: ${slab.toUpperCase()}`
+          : `PDFs generated for slab: ${slab.toUpperCase()}`;
 
       } catch (err) {
         progressSection.classList.remove('visible');
