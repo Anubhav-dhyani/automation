@@ -39,7 +39,8 @@ app.post('/preview-columns', upload.fields([
         name: findColumn(columns, ['registered name', 'name', 'student name', 'full name', 'candidate name']) || '',
         course: findColumn(columns, ['course', 'program', 'programme', 'department']) || '',
         score: findColumn(columns, ['result', 'score', 'gecet score', 'marks', 'gecet']) || '',
-        scholarship: findColumn(columns, ['scholarship', 'scholarship type']) || ''
+        scholarship: findColumn(columns, ['scholarship', 'scholarship type']) || '',
+        academicSession: findColumn(columns, ['academic session', 'session', 'academic_session', 'academ session']) || ''
       }
     });
   } catch (error) {
@@ -49,7 +50,7 @@ app.post('/preview-columns', upload.fields([
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// Generic preview (works for XLSX/XLS/CSV). Used by the new feature.
+// Generic preview (works for XLSX/XLS/CSV).
 // ─────────────────────────────────────────────────────────────────────
 app.post('/preview-columns-generic', upload.single('file'), async (req, res) => {
   try {
@@ -81,15 +82,11 @@ app.post('/preview-columns-generic', upload.single('file'), async (req, res) => 
 });
 
 function normalizeCourseKey(v) {
-  return String(v || '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
+  return String(v || '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// New feature: enrich student Excel using course->academic session mapping
-// Adds 2 columns: Academic Session, Academic Session Status
+// Enrich student Excel using course->academic session mapping
 // ─────────────────────────────────────────────────────────────────────
 app.post('/enrich-academic-session', upload.fields([
   { name: 'students', maxCount: 1 },
@@ -99,66 +96,45 @@ app.post('/enrich-academic-session', upload.fields([
 
   try {
     studentsFile = req.files['students']?.[0];
-    mappingFile = req.files['mapping']?.[0];
+    mappingFile  = req.files['mapping']?.[0];
     if (!studentsFile || !mappingFile) {
       return res.status(400).json({ error: 'Both Student file and Course Mapping file are required.' });
     }
 
     const { studentsCourseCol, mappingCourseCol, mappingSessionCol } = req.body;
-
     if (!studentsCourseCol) return res.status(400).json({ error: 'Student Course column is required.' });
-    if (!mappingCourseCol) return res.status(400).json({ error: 'Mapping Course column is required.' });
+    if (!mappingCourseCol)  return res.status(400).json({ error: 'Mapping Course column is required.' });
     if (!mappingSessionCol) return res.status(400).json({ error: 'Mapping Academic Session column is required.' });
 
-    // Read students
-    const studentsWb = XLSX.readFile(studentsFile.path);
-    const studentsSheetName = studentsWb.SheetNames[0];
-    const studentsSheet = studentsWb.Sheets[studentsSheetName];
-    const studentsRows = XLSX.utils.sheet_to_json(studentsSheet, { defval: '' });
-
+    const studentsWb    = XLSX.readFile(studentsFile.path);
+    const studentsSheet = studentsWb.Sheets[studentsWb.SheetNames[0]];
+    const studentsRows  = XLSX.utils.sheet_to_json(studentsSheet, { defval: '' });
     if (!studentsRows.length) return res.status(400).json({ error: 'Student file is empty.' });
 
-    // Read mapping (CSV or XLSX)
-    const mappingWb = XLSX.readFile(mappingFile.path);
+    const mappingWb    = XLSX.readFile(mappingFile.path);
     const mappingSheet = mappingWb.Sheets[mappingWb.SheetNames[0]];
-    const mappingRows = XLSX.utils.sheet_to_json(mappingSheet, { defval: '' });
-
+    const mappingRows  = XLSX.utils.sheet_to_json(mappingSheet, { defval: '' });
     if (!mappingRows.length) return res.status(400).json({ error: 'Course Mapping file is empty.' });
 
-    // Build map: courseKey -> sessionValue
     const courseToSession = new Map();
     for (const r of mappingRows) {
       const key = normalizeCourseKey(r[mappingCourseCol]);
       const sessionVal = String(r[mappingSessionCol] || '').trim();
-      if (!key) continue;
-      if (!sessionVal) continue;
-      // first wins (avoid random overwrite if duplicates)
+      if (!key || !sessionVal) continue;
       if (!courseToSession.has(key)) courseToSession.set(key, sessionVal);
     }
 
-    // Enrich students
-    let matched = 0;
-    let unmatched = 0;
-
+    let matched = 0, unmatched = 0;
     const outRows = studentsRows.map((r) => {
-      const key = normalizeCourseKey(r[studentsCourseCol]);
+      const key     = normalizeCourseKey(r[studentsCourseCol]);
       const session = key ? (courseToSession.get(key) || '') : '';
-
-      const status = session ? 'Matched' : 'Unmatched';
+      const status  = session ? 'Matched' : 'Unmatched';
       if (session) matched++; else unmatched++;
-
-      return {
-        ...r,
-        'Academic Session': session,
-        'Academic Session Status': status,
-      };
+      return { ...r, 'Academic Session': session, 'Academic Session Status': status };
     });
 
-    // Write output workbook
     const outWb = XLSX.utils.book_new();
-    const outSheet = XLSX.utils.json_to_sheet(outRows);
-    XLSX.utils.book_append_sheet(outWb, outSheet, 'Enriched');
-
+    XLSX.utils.book_append_sheet(outWb, XLSX.utils.json_to_sheet(outRows), 'Enriched');
     const buffer = XLSX.write(outWb, { type: 'buffer', bookType: 'xlsx' });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -171,28 +147,27 @@ app.post('/enrich-academic-session', upload.fields([
     res.status(500).json({ error: error.message });
   } finally {
     try { if (studentsFile?.path) fs.unlinkSync(studentsFile.path); } catch {}
-    try { if (mappingFile?.path) fs.unlinkSync(mappingFile.path); } catch {}
+    try { if (mappingFile?.path)  fs.unlinkSync(mappingFile.path);  } catch {}
   }
 });
 
-// ─── Generate PDFs with custom column mapping ─────────────────────────
+// ─── Generate PDFs ─────────────────────────────────────────────────────
 app.post('/generate-mapped', upload.fields([
   { name: 'template', maxCount: 1 },
-  { name: 'excel', maxCount: 1 }
+  { name: 'excel',    maxCount: 1 }
 ]), async (req, res) => {
   let templateFile, excelFile;
 
   try {
     templateFile = req.files['template']?.[0];
-    excelFile = req.files['excel']?.[0];
+    excelFile    = req.files['excel']?.[0];
     if (!templateFile || !excelFile) return res.status(400).json({ error: 'Both files are required.' });
 
-    const { nameCol, courseCol, scoreCol, scholarshipCol, slab } = req.body;
+    const { nameCol, courseCol, scoreCol, scholarshipCol, academicSessionCol, slab } = req.body;
 
     if (!nameCol) return res.status(400).json({ error: 'Name column is required.' });
 
-    // Slab is required for filtering; and courseCol is required to apply slab rules
-    const slabValue = String(slab || '').trim(); // expected: "50k" or "25k"
+    const slabValue = String(slab || '').trim();
     if (!slabValue || !['50k', '25k'].includes(slabValue)) {
       return res.status(400).json({ error: 'Please select scholarship slab (50k/25k).' });
     }
@@ -201,25 +176,17 @@ app.post('/generate-mapped', upload.fields([
     }
 
     const workbook = XLSX.readFile(excelFile.path);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(sheet);
+    const sheet    = workbook.Sheets[workbook.SheetNames[0]];
+    const data     = XLSX.utils.sheet_to_json(sheet);
     const templateBytes = fs.readFileSync(templateFile.path);
 
-    // --- filter rows based on slab + course ---
     const isBtechOrMca = (courseRaw) => {
       const c = String(courseRaw || '').trim().toLowerCase();
-
-      // matches: "B.Tech", "BTECH", "B Tech", "B. Tech CSE", etc.
-      const isBtech = /^b\s*\.?\s*tech\b/.test(c);
-      // matches: "MCA", "MCA (AI)", etc.
-      const isMca = /^mca\b/.test(c);
-
-      return isBtech || isMca;
+      return /^b\s*\.?\s*tech\b/.test(c) || /^mca\b/.test(c);
     };
 
     const rowsToProcess = data.filter((row) => {
-      const courseVal = row[courseCol];
-      const match = isBtechOrMca(courseVal);
+      const match = isBtechOrMca(row[courseCol]);
       return slabValue === '50k' ? match : !match;
     });
 
@@ -230,7 +197,6 @@ app.post('/generate-mapped', upload.fields([
 
     const archive = archiver('zip', { zlib: { level: 5 } });
     archive.on('error', (err) => {
-      console.error('Archive error:', err);
       if (!res.headersSent) res.status(500).json({ error: err.message });
     });
     archive.pipe(res);
@@ -238,15 +204,18 @@ app.post('/generate-mapped', upload.fields([
     for (let i = 0; i < rowsToProcess.length; i++) {
       const row = rowsToProcess[i];
 
-      const name = String(row[nameCol] || '').trim();
-      const course = courseCol ? String(row[courseCol] || '').trim() : '';
-      const score = scoreCol ? String(row[scoreCol] || '').trim() : '';
-      const scholarship = scholarshipCol ? String(row[scholarshipCol] || '').trim() : '';
+      const name            = String(row[nameCol]              || '').trim();
+      const course          = courseCol          ? String(row[courseCol]          || '').trim() : '';
+      const score           = scoreCol           ? String(row[scoreCol]           || '').trim() : '';
+      const scholarship     = scholarshipCol     ? String(row[scholarshipCol]     || '').trim() : '';
+      const academicSession = academicSessionCol ? String(row[academicSessionCol] || '').trim() : '';
 
       if (!name) continue;
-      console.log(`[${i + 1}/${rowsToProcess.length}] ${name} (${slabValue})`);
+      console.log(`[${i + 1}/${rowsToProcess.length}] ${name} | Session: ${academicSession || 'N/A'}`);
 
-      const pdfBytes = await generatePersonalizedPdf(templateBytes, { name, course, score, scholarship });
+      const pdfBytes = await generatePersonalizedPdf(templateBytes, {
+        name, course, score, scholarship, academicSession
+      });
       const safeName = name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
       archive.append(Buffer.from(pdfBytes), { name: `${safeName}.pdf` });
     }
@@ -256,64 +225,55 @@ app.post('/generate-mapped', upload.fields([
     console.error('Error:', error);
     if (!res.headersSent) res.status(500).json({ error: error.message });
   } finally {
-    // ensure temp files removed even on error
     try { if (templateFile?.path) fs.unlinkSync(templateFile.path); } catch {}
-    try { if (excelFile?.path) fs.unlinkSync(excelFile.path); } catch {}
+    try { if (excelFile?.path)    fs.unlinkSync(excelFile.path);    } catch {}
   }
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-//  PDF GENERATION — white-out + rewrite approach
-// ═══════════════════════════════════════════════════════════════════════
+//  PDF GENERATION — white-out + rewrite
 //
-//  Template page: 1080 × 1445 pts.  PDF origin = bottom-left.
+//  Template page: 1080 × 1445 pts. PDF origin = BOTTOM-LEFT.
 //
-//  EXACT original text positions (from pdf-parse extraction):
-//  ───────────────────────────────────────────────────────────
-//  Y=1178  "Dear Abhinav Shukla,"
-//  Y=1136  "Congratulations on qualifying for the Graphic Era Common Entrance Test (GECET) 2026."
-//  Y=1094  "Based on your performance, we are pleased to offer you provisional admission in M.Tech CSE at"
-//  Y=1070  "Graphic Era (Deemed to be University), Dehradun, for the Academic Session 2026–28."
-//  Y=1028  "As a student, you will gain access to experienced faculty, industry-oriented learning, research"
-//  Y=1004  "exposure, and structured career support within a performance-driven academic environment."
-//  Y= 962  "GECET Score: 67"
-//  Y= 934  "Scholarship: One Time 10%"
-//
-//  Line spacing within a paragraph ≈ 24 pts
-//  Paragraph gap ≈ 42 pts
+//  The floating stamp ("2026-2029" on the right side) is part of the
+//  original template. We white it out and DO NOT redraw it.
+//  The Academic Session value only appears inline in the paragraph:
+//  "...for the Academic Session <VALUE>."
 // ═══════════════════════════════════════════════════════════════════════
 
-async function generatePersonalizedPdf(templateBytes, { name, course, score, scholarship }) {
+async function generatePersonalizedPdf(templateBytes, { name, course, score, scholarship, academicSession }) {
   const pdfDoc = await PDFDocument.load(templateBytes);
-  const page = pdfDoc.getPages()[0];
+  const page   = pdfDoc.getPages()[0];
 
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontBold    = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-  const white = rgb(1, 1, 1);
+  const white     = rgb(1, 1, 1);
   const textColor = rgb(0.13, 0.13, 0.13);
-  const fontSize = 20;
+  const fontSize  = 20;
   const lineHeight = 24;
-  const paraGap = 18;    // extra gap between paragraphs (on top of lineHeight)
-  const maxW = 910;       // usable text width (x: 90 → ~1000)
-  const leftX = 90;
+  const paraGap   = 18;
+  const maxW      = 820;
+  const leftX     = 90;
 
-  // ─── 1. NAME ─────────────────────────────────────────────────────────
-  // Cover "Dear Abhinav Shukla,"
+  // Use Excel value if present, otherwise keep template default
+  const sessionDisplay = academicSession || '2026\u201328';
+
+  // ─── 1. NAME ────────────────────────────────────────────────────────
   page.drawRectangle({ x: 88, y: 1173, width: 700, height: 30, color: white });
   page.drawText(`Dear ${name},`, {
     x: leftX, y: 1178, size: fontSize, font: fontRegular, color: textColor
   });
 
-  // ─── 2. COVER ENTIRE BLOCK from "Based on..." through "Scholarship:" ──
-  // Y range: 1094 (top of "Based on...") + some above → down past Scholarship
-  // "Complete Your Admission Process" is at Y=814, so we're safe above that
-  page.drawRectangle({ x: 88, y: 860, width: 920, height: 250, color: white });
+  // ─── 2. MAIN BODY BLOCK ─────────────────────────────────────────────
+  // White-out covers the full width of the page (x: 88 → 1070) to also
+  // erase the floating stamp that the template has on the right side.
+  // We do NOT redraw the stamp — it simply disappears.
+  page.drawRectangle({ x: 88, y: 860, width: 985, height: 260, color: white });
 
-  // Now re-draw all text from Y=1094 downward, adjusting for wrapping
   let cursorY = 1094;
 
-  // ── Line: "Based on your performance... <COURSE> at" ────────────────
+  // "Based on your performance... <COURSE> at"
   const segments = buildCourseBlock(course, fontSize, fontRegular, fontBold, maxW, leftX);
   for (const seg of segments) {
     for (const part of seg) {
@@ -324,19 +284,16 @@ async function generatePersonalizedPdf(templateBytes, { name, course, score, sch
     cursorY -= lineHeight;
   }
 
-  // ── Line: "Graphic Era (Deemed to be University)..." ────────────────
-  // Only draw this if it wasn't already included in the last segment
-  const line2Text = 'Graphic Era (Deemed to be University), Dehradun, for the Academic Session 2026\u201328.';
-  if (!segments.needsSeparateLine2) {
-    // It was already drawn inline — skip
-  } else {
+  // "Graphic Era... for the Academic Session <DYNAMIC VALUE>."
+  const line2Text = `Graphic Era (Deemed to be University), Dehradun, for the Academic Session ${sessionDisplay}.`;
+  if (segments.needsSeparateLine2) {
     page.drawText(line2Text, {
       x: leftX, y: cursorY, size: fontSize, font: fontRegular, color: textColor
     });
     cursorY -= lineHeight;
   }
 
-  // ── Paragraph: "As a student, you will gain access..." ──────────────
+  // "As a student..." paragraph
   cursorY -= paraGap;
   const para2Lines = wrapText(
     'As a student, you will gain access to experienced faculty, industry-oriented learning, research exposure, and structured career support within a performance-driven academic environment.',
@@ -349,30 +306,31 @@ async function generatePersonalizedPdf(templateBytes, { name, course, score, sch
     cursorY -= lineHeight;
   }
 
-  // ── GECET Score ─────────────────────────────────────────────────────
+  // GECET Score
   cursorY -= paraGap;
   page.drawText(`GECET Score: ${score}`, {
     x: leftX, y: cursorY, size: fontSize, font: fontBold, color: textColor
   });
   cursorY -= lineHeight;
 
-  // ── Scholarship ─────────────────────────────────────────────────────
+  // Scholarship
   page.drawText(`Scholarship: ${scholarship}`, {
     x: leftX, y: cursorY, size: fontSize, font: fontBold, color: textColor
   });
+
+  // ── Stamp is intentionally NOT redrawn ──────────────────────────────
+  // The white-out rectangle above already erased it from the template.
 
   return await pdfDoc.save();
 }
 
 /**
  * Build the "Based on your performance... <COURSE> at" block.
- * Returns an array of line-segments (each line = array of {text, x, font}).
- * Also returns .needsSeparateLine2 to indicate if "Graphic Era..." needs its own line.
+ * Returns array of line-segments. Sets .needsSeparateLine2.
  */
 function buildCourseBlock(course, fontSize, fontRegular, fontBold, maxW, leftX) {
   const prefix = 'Based on your performance, we are pleased to offer you provisional admission in ';
   const suffix = ' at';
-  const line2Full = 'Graphic Era (Deemed to be University), Dehradun, for the Academic Session 2026\u201328.';
 
   const prefixW = fontRegular.widthOfTextAtSize(prefix, fontSize);
   const courseW = fontBold.widthOfTextAtSize(course, fontSize);
@@ -380,24 +338,20 @@ function buildCourseBlock(course, fontSize, fontRegular, fontBold, maxW, leftX) 
 
   const lines = [];
 
-  // Case 1: Everything fits on one line
   if (prefixW + courseW + suffixW <= maxW) {
     lines.push([
-      { text: prefix, x: leftX, font: fontRegular },
-      { text: course, x: leftX + prefixW, font: fontBold },
-      { text: suffix, x: leftX + prefixW + courseW, font: fontRegular },
+      { text: prefix, x: leftX,                     font: fontRegular },
+      { text: course, x: leftX + prefixW,            font: fontBold    },
+      { text: suffix, x: leftX + prefixW + courseW,  font: fontRegular },
     ]);
-    // "Graphic Era..." on its own line
     lines.needsSeparateLine2 = true;
     return lines;
   }
 
-  // Case 2: Course wraps — prefix on line 1, course continues on line 2
-  // Line 1: prefix + as much of course as fits
+  // Course wraps to next line
   const remainingL1 = maxW - prefixW;
   const courseWords = course.split(' ');
-  let line1Course = '';
-  let line2Course = '';
+  let line1Course = '', line2Course = '';
 
   for (let w = 0; w < courseWords.length; w++) {
     const attempt = courseWords.slice(0, w + 1).join(' ');
@@ -410,39 +364,19 @@ function buildCourseBlock(course, fontSize, fontRegular, fontBold, maxW, leftX) 
     line2Course = '';
   }
 
-  // Line 1
   const l1Parts = [{ text: prefix, x: leftX, font: fontRegular }];
-  if (line1Course) {
-    l1Parts.push({ text: line1Course, x: leftX + prefixW, font: fontBold });
-  }
+  if (line1Course) l1Parts.push({ text: line1Course, x: leftX + prefixW, font: fontBold });
   lines.push(l1Parts);
 
-  // Line 2: remaining course + " at" + possibly "Graphic Era..."
   if (line2Course) {
-    const l2CourseW = fontBold.widthOfTextAtSize(line2Course, fontSize);
+    const l2CourseW   = fontBold.widthOfTextAtSize(line2Course, fontSize);
     const afterCourse = leftX + l2CourseW;
-    const afterSuffix = afterCourse + fontRegular.widthOfTextAtSize(suffix + ' ', fontSize);
-    const line2Remaining = maxW - (afterSuffix - leftX);
-    const line2FullW = fontRegular.widthOfTextAtSize(line2Full, fontSize);
-
-    if (line2FullW <= line2Remaining) {
-      // "remaining course" + " at " + "Graphic Era..." all fit on line 2
-      lines.push([
-        { text: line2Course, x: leftX, font: fontBold },
-        { text: suffix + ' ', x: afterCourse, font: fontRegular },
-        { text: line2Full, x: afterSuffix, font: fontRegular },
-      ]);
-      lines.needsSeparateLine2 = false;
-    } else {
-      // Line 2: remaining course + " at"
-      lines.push([
-        { text: line2Course, x: leftX, font: fontBold },
-        { text: suffix, x: afterCourse, font: fontRegular },
-      ]);
-      lines.needsSeparateLine2 = true;
-    }
+    lines.push([
+      { text: line2Course, x: leftX,       font: fontBold    },
+      { text: suffix,      x: afterCourse, font: fontRegular },
+    ]);
+    lines.needsSeparateLine2 = true;
   } else {
-    // No remaining course text — suffix goes on line 1 end (already handled above)
     lines.needsSeparateLine2 = true;
   }
 
@@ -450,13 +384,12 @@ function buildCourseBlock(course, fontSize, fontRegular, fontBold, maxW, leftX) 
 }
 
 /**
- * Simple word-wrap helper. Returns array of strings that fit within maxWidth.
+ * Simple word-wrap. Returns array of strings fitting within maxWidth.
  */
 function wrapText(text, fontSize, font, maxWidth) {
   const words = text.split(' ');
   const lines = [];
   let currentLine = '';
-
   for (const word of words) {
     const testLine = currentLine ? `${currentLine} ${word}` : word;
     if (font.widthOfTextAtSize(testLine, fontSize) <= maxWidth) {

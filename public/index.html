@@ -315,7 +315,7 @@
     <div class="card">
       <h2><span class="step">1</span> Upload Files</h2>
 
-      <!-- NEW: Slab selection -->
+      <!-- Slab selection -->
       <div class="mapping-item" style="margin-bottom:16px;">
         <label>Scholarship Slab *</label>
         <select id="slab">
@@ -360,6 +360,11 @@
         <div class="mapping-item">
           <label>Scholarship Column</label>
           <select id="scholarshipCol"></select>
+        </div>
+        <!-- ✅ NEW: Academic Session Column -->
+        <div class="mapping-item">
+          <label>Academic Session Column</label>
+          <select id="academicSessionCol"></select>
         </div>
       </div>
 
@@ -499,9 +504,9 @@
         excelData = data;
         previewInfo.innerHTML = `Found <strong>${data.rowCount}</strong> records with <strong>${data.columns.length}</strong> columns`;
 
-        // Populate dropdowns
-        const selects = ['nameCol', 'courseCol', 'scoreCol', 'scholarshipCol'];
-        const autoKeys = ['name', 'course', 'score', 'scholarship'];
+        // Populate dropdowns (added academicSession)
+        const selects = ['nameCol', 'courseCol', 'scoreCol', 'scholarshipCol', 'academicSessionCol'];
+        const autoKeys = ['name', 'course', 'score', 'scholarship', 'academicSession'];
 
         selects.forEach((selId, idx) => {
           const sel = document.getElementById(selId);
@@ -542,13 +547,11 @@
       const nameSelected = document.getElementById('nameCol').value;
       const courseSelected = document.getElementById('courseCol').value;
       const slab = slabSelect.value;
-
-      // slab requires course mapping for filtering
       generateBtn.disabled = !(pdfReady && excelData && nameSelected && courseSelected && slab);
     }
 
-    // Listen for mapping changes
-    ['nameCol', 'courseCol', 'scoreCol', 'scholarshipCol'].forEach(id => {
+    // Listen for mapping changes (added academicSessionCol)
+    ['nameCol', 'courseCol', 'scoreCol', 'scholarshipCol', 'academicSessionCol'].forEach(id => {
       document.getElementById(id).addEventListener('change', checkReady);
     });
 
@@ -558,6 +561,7 @@
       const courseCol = document.getElementById('courseCol').value;
       const scoreCol = document.getElementById('scoreCol').value;
       const scholarshipCol = document.getElementById('scholarshipCol').value;
+      const academicSessionCol = document.getElementById('academicSessionCol').value; // ✅ NEW
       const slab = slabSelect.value;
 
       if (!nameCol) {
@@ -586,6 +590,7 @@
         formData.append('courseCol', courseCol);
         formData.append('scoreCol', scoreCol);
         formData.append('scholarshipCol', scholarshipCol);
+        formData.append('academicSessionCol', academicSessionCol); // ✅ NEW
         formData.append('slab', slab);
 
         const response = await fetch('/generate-mapped', { method: 'POST', body: formData });
@@ -693,17 +698,13 @@
 
     studentsInput.addEventListener('change', async () => {
       if (!studentsInput.files.length) return;
-
       studentsFilename.textContent = studentsInput.files[0].name;
       studentsZone.classList.add('has-file');
-
       try {
         hideEnrichError();
         studentsPreview = await previewGeneric(studentsInput.files[0]);
-
         fillSelect('studentsCourseCol', studentsPreview.columns, studentsPreview.autoDetected.course || '');
         enrichPreviewInfo.innerHTML = `Student file: <strong>${studentsPreview.rowCount}</strong> rows, <strong>${studentsPreview.columns.length}</strong> columns`;
-
         enrichMappingSection.classList.add('visible');
         checkEnrichReady();
       } catch (e) {
@@ -713,17 +714,13 @@
 
     mappingInput.addEventListener('change', async () => {
       if (!mappingInput.files.length) return;
-
       mappingFilename.textContent = mappingInput.files[0].name;
       mappingZone.classList.add('has-file');
-
       try {
         hideEnrichError();
         mappingPreview = await previewGeneric(mappingInput.files[0]);
-
         fillSelect('mappingCourseCol', mappingPreview.columns, mappingPreview.autoDetected.course || '');
         fillSelect('mappingSessionCol', mappingPreview.columns, mappingPreview.autoDetected.academicSession || '');
-
         enrichMappingSection.classList.add('visible');
         checkEnrichReady();
       } catch (e) {
@@ -782,7 +779,6 @@
       }
     });
     // ===================== /NEW FEATURE JS =====================
-
   </script>
 </body>
 </html>
