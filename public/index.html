@@ -35,10 +35,7 @@
       margin-bottom: 8px;
     }
 
-    header p {
-      color: #9a9ab0;
-      font-size: 15px;
-    }
+    header p { color: #9a9ab0; font-size: 15px; }
 
     .card {
       background: rgba(255, 255, 255, 0.05);
@@ -47,6 +44,11 @@
       border-radius: 16px;
       padding: 32px;
       margin-bottom: 24px;
+    }
+
+    .card.gecet-card {
+      border-color: rgba(100, 220, 180, 0.25);
+      background: rgba(0, 200, 150, 0.04);
     }
 
     .card h2 {
@@ -73,6 +75,10 @@
       flex-shrink: 0;
     }
 
+    .card h2 .step.teal {
+      background: linear-gradient(135deg, #00c896, #00e5b0);
+    }
+
     .upload-zone {
       border: 2px dashed rgba(255, 255, 255, 0.15);
       border-radius: 12px;
@@ -88,6 +94,11 @@
       background: rgba(247, 151, 30, 0.05);
     }
 
+    .upload-zone.teal:hover {
+      border-color: #00c896;
+      background: rgba(0, 200, 150, 0.05);
+    }
+
     .upload-zone.has-file {
       border-color: #4caf50;
       background: rgba(76, 175, 80, 0.08);
@@ -100,22 +111,10 @@
       cursor: pointer;
     }
 
-    .upload-zone .icon {
-      font-size: 40px;
-      margin-bottom: 10px;
-    }
-
-    .upload-zone .label {
-      font-size: 14px;
-      color: #9a9ab0;
-    }
-
-    .upload-zone .filename {
-      font-size: 14px;
-      color: #4caf50;
-      font-weight: 600;
-      margin-top: 8px;
-    }
+    .upload-zone .icon    { font-size: 40px; margin-bottom: 10px; }
+    .upload-zone .label   { font-size: 14px; color: #9a9ab0; }
+    .upload-zone .sublabel { font-size: 12px; color: #6a6a80; margin-top: 4px; }
+    .upload-zone .filename { font-size: 14px; color: #4caf50; font-weight: 600; margin-top: 8px; }
 
     .upload-row {
       display: grid;
@@ -123,14 +122,8 @@
       gap: 16px;
     }
 
-    /* Column mapping */
-    .mapping-section {
-      display: none;
-    }
-
-    .mapping-section.visible {
-      display: block;
-    }
+    .mapping-section { display: none; }
+    .mapping-section.visible { display: block; }
 
     .mapping-grid {
       display: grid;
@@ -158,16 +151,22 @@
       transition: border-color 0.3s;
     }
 
-    .mapping-item select:focus {
-      border-color: #f7971e;
+    .mapping-item select:focus { border-color: #f7971e; }
+    .mapping-item select.teal:focus { border-color: #00c896; }
+    .mapping-item select option { background: #2a2a4a; color: #e0e0e0; }
+
+    .mapping-divider {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #00c896;
+      padding: 8px 0 4px;
+      border-bottom: 1px solid rgba(0, 200, 150, 0.2);
+      margin-bottom: 4px;
     }
 
-    .mapping-item select option {
-      background: #2a2a4a;
-      color: #e0e0e0;
-    }
-
-    /* Preview table */
     .preview-table {
       width: 100%;
       border-collapse: collapse;
@@ -195,11 +194,24 @@
       margin-bottom: 12px;
     }
 
-    .preview-info strong {
-      color: #ffd200;
+    .preview-info strong      { color: #ffd200; }
+    .preview-info strong.teal { color: #00e5b0; }
+
+    .result-preview-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 200, 150, 0.12);
+      border: 1px solid rgba(0, 200, 150, 0.3);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 14px;
+      color: #00e5b0;
+      margin-top: 12px;
     }
 
-    /* Generate button */
+    .result-preview-badge .pipe { color: #fff; opacity: 0.4; margin: 0 2px; }
+
     .btn-generate {
       width: 100%;
       padding: 16px;
@@ -222,6 +234,15 @@
       box-shadow: 0 8px 25px rgba(247, 151, 30, 0.3);
     }
 
+    .btn-generate.teal {
+      background: linear-gradient(135deg, #00c896, #00e5b0);
+      color: #0a2520;
+    }
+
+    .btn-generate.teal:hover {
+      box-shadow: 0 8px 25px rgba(0, 200, 150, 0.3);
+    }
+
     .btn-generate:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -229,15 +250,8 @@
       box-shadow: none;
     }
 
-    /* Progress */
-    .progress-section {
-      display: none;
-      text-align: center;
-    }
-
-    .progress-section.visible {
-      display: block;
-    }
+    .progress-section { display: none; text-align: center; }
+    .progress-section.visible { display: block; }
 
     .spinner {
       width: 48px;
@@ -249,37 +263,17 @@
       margin: 0 auto 16px;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    .spinner.teal { border-top-color: #00c896; }
 
-    .progress-text {
-      font-size: 15px;
-      color: #b0b0c8;
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Result */
-    .result-section {
-      display: none;
-      text-align: center;
-    }
+    .progress-text { font-size: 15px; color: #b0b0c8; }
 
-    .result-section.visible {
-      display: block;
-    }
+    .result-section { display: none; text-align: center; }
+    .result-section.visible { display: block; }
+    .result-success { color: #4caf50; font-size: 48px; margin-bottom: 12px; }
+    .result-msg { font-size: 16px; color: #b0b0c8; }
 
-    .result-success {
-      color: #4caf50;
-      font-size: 48px;
-      margin-bottom: 12px;
-    }
-
-    .result-msg {
-      font-size: 16px;
-      color: #b0b0c8;
-    }
-
-    /* Error */
     .error-msg {
       display: none;
       background: rgba(244, 67, 54, 0.15);
@@ -291,14 +285,36 @@
       margin-top: 16px;
     }
 
-    .error-msg.visible {
-      display: block;
+    .error-msg.visible { display: block; }
+
+    .output-cols-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .col-chip {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .col-chip.regular {
+      background: rgba(255,255,255,0.08);
+      color: #c0c0d0;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .col-chip.special {
+      background: rgba(0,200,150,0.15);
+      color: #00e5b0;
+      border: 1px solid rgba(0,200,150,0.3);
     }
 
     @media (max-width: 600px) {
-      .upload-row, .mapping-grid {
-        grid-template-columns: 1fr;
-      }
+      .upload-row, .mapping-grid { grid-template-columns: 1fr; }
       .container { padding: 20px 12px; }
       header h1 { font-size: 24px; }
     }
@@ -308,14 +324,13 @@
   <div class="container">
     <header>
       <h1>Admission Letter Generator</h1>
-      <p>Upload your PDF template & Excel data to generate personalized admission letters</p>
+      <p>Upload your PDF template &amp; Excel data to generate personalized admission letters</p>
     </header>
 
     <!-- Step 1: Upload Files -->
     <div class="card">
       <h2><span class="step">1</span> Upload Files</h2>
 
-      <!-- Slab selection -->
       <div class="mapping-item" style="margin-bottom:16px;">
         <label>Scholarship Slab *</label>
         <select id="slab">
@@ -361,14 +376,11 @@
           <label>Scholarship Column</label>
           <select id="scholarshipCol"></select>
         </div>
-        <!-- ✅ NEW: Academic Session Column -->
         <div class="mapping-item">
           <label>Academic Session Column</label>
           <select id="academicSessionCol"></select>
         </div>
       </div>
-
-      <!-- Sample data preview -->
       <div id="previewTableWrap"></div>
     </div>
 
@@ -376,22 +388,20 @@
     <div class="card" id="generateSection" style="display:none;">
       <h2><span class="step">3</span> Generate PDFs</h2>
       <button class="btn-generate" id="generateBtn" disabled>
-        <span>⚡</span> Generate All PDFs & Download ZIP
+        <span>⚡</span> Generate All PDFs &amp; Download ZIP
       </button>
       <div class="error-msg" id="errorMsg"></div>
-
       <div class="progress-section" id="progressSection">
         <div class="spinner"></div>
         <div class="progress-text">Generating personalized PDFs... Please wait.</div>
       </div>
-
       <div class="result-section" id="resultSection">
         <div class="result-success">✅</div>
         <div class="result-msg" id="resultMsg">All PDFs generated and downloaded!</div>
       </div>
     </div>
 
-    <!-- ===================== NEW FEATURE (separate section) ===================== -->
+    <!-- Section A: Enrich Academic Session -->
     <div class="card" id="enrichCard">
       <h2><span class="step">A</span> Enrich Excel (Academic Session)</h2>
       <p style="color:#9a9ab0; font-size:14px; margin-bottom:14px;">
@@ -405,10 +415,9 @@
           <div class="filename" id="studentsFilename"></div>
           <input type="file" id="studentsInput" accept=".xlsx,.xls,.csv">
         </div>
-
         <div class="upload-zone" id="mappingZone">
           <div class="icon">🗂️</div>
-          <div class="label">Course Mapping (CSV/XLSX) with Academic Session</div>
+          <div class="label">Course Mapping (CSV/XLSX)</div>
           <div class="filename" id="mappingFilename"></div>
           <input type="file" id="mappingInput" accept=".xlsx,.xls,.csv">
         </div>
@@ -416,18 +425,15 @@
 
       <div id="enrichMappingSection" class="mapping-section" style="margin-top:16px;">
         <div class="preview-info" id="enrichPreviewInfo"></div>
-
         <div class="mapping-grid">
           <div class="mapping-item">
             <label>Student: Course Column *</label>
             <select id="studentsCourseCol"></select>
           </div>
-
           <div class="mapping-item">
             <label>Mapping: Course Column *</label>
             <select id="mappingCourseCol"></select>
           </div>
-
           <div class="mapping-item">
             <label>Mapping: Academic Session Column *</label>
             <select id="mappingSessionCol"></select>
@@ -446,31 +452,165 @@
         </div>
       </div>
     </div>
-    <!-- =================== /NEW FEATURE (separate section) =================== -->
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Section B: FINAL GECET EXCEL
+    ════════════════════════════════════════════════════════════════ -->
+    <div class="card gecet-card" id="gecetCard">
+      <h2><span class="step teal">B</span> Final GECET Excel</h2>
+      <p style="color:#9a9ab0; font-size:14px; margin-bottom:10px;">
+        Merge your <strong style="color:#00e5b0;">Offer Letter Excel</strong> with <strong style="color:#00e5b0;">Master Data</strong> to produce a clean output. The <em>Result</em> column is auto-merged from your result &amp; scholarship columns.
+      </p>
+
+      <!-- Output columns chips -->
+      <div class="output-cols-preview">
+        <span class="col-chip regular">Name</span>
+        <span class="col-chip regular">Email</span>
+        <span class="col-chip regular">Course</span>
+        <span class="col-chip regular">Phone</span>
+        <span class="col-chip regular">Campus</span>
+        <span class="col-chip special">Result &nbsp;<span style="opacity:0.45">|</span>&nbsp; Scholarship → merged as Result</span>
+        <span class="col-chip special">Offer Letter (PDF path / URL)</span>
+      </div>
+
+      <!-- Upload row -->
+      <div class="upload-row">
+        <div class="upload-zone teal" id="gecetOfferZone">
+          <div class="icon">📋</div>
+          <div class="label">Upload Offer Letter Excel</div>
+          <div class="sublabel">Contains result &amp; scholarship columns</div>
+          <div class="filename" id="gecetOfferFilename"></div>
+          <input type="file" id="gecetOfferInput" accept=".xlsx,.xls,.csv">
+        </div>
+
+        <div class="upload-zone teal" id="gecetMasterZone">
+          <div class="icon">🗄️</div>
+          <div class="label">Upload Master Data</div>
+          <div class="sublabel">Contains email, phone, campus etc.</div>
+          <div class="filename" id="gecetMasterFilename"></div>
+          <input type="file" id="gecetMasterInput" accept=".xlsx,.xls,.csv">
+        </div>
+      </div>
+
+      <!-- Column mapping (shown after files loaded) -->
+      <div id="gecetMappingSection" class="mapping-section" style="margin-top:20px;">
+        <div class="preview-info" id="gecetPreviewInfo"></div>
+
+        <div class="mapping-grid">
+
+          <div class="mapping-divider">📋 Offer Letter Columns</div>
+
+          <div class="mapping-item">
+            <label>Name Column * <span style="color:#ff6b6b; font-size:11px;">required</span></label>
+            <select id="gecetOfferNameCol" class="teal"></select>
+          </div>
+          <div class="mapping-item">
+            <label>Course Column</label>
+            <select id="gecetOfferCourseCol" class="teal"></select>
+          </div>
+          <div class="mapping-item">
+            <label>Result Column <span style="color:#00e5b0; font-size:11px;">(→ merged Result)</span></label>
+            <select id="gecetOfferResultCol" class="teal"></select>
+          </div>
+          <div class="mapping-item">
+            <label>Scholarship Column <span style="color:#00e5b0; font-size:11px;">(→ merged Result)</span></label>
+            <select id="gecetOfferScholarshipCol" class="teal"></select>
+          </div>
+          <div class="mapping-item">
+            <label>Email Column <span style="color:#6a6a80; font-size:11px;">(optional)</span></label>
+            <select id="gecetOfferEmailCol" class="teal"></select>
+          </div>
+          <div class="mapping-item">
+            <label>Phone Column <span style="color:#6a6a80; font-size:11px;">(optional)</span></label>
+            <select id="gecetOfferPhoneCol" class="teal"></select>
+          </div>
+          <div class="mapping-item">
+            <label>Campus Column <span style="color:#6a6a80; font-size:11px;">(optional)</span></label>
+            <select id="gecetOfferCampusCol" class="teal"></select>
+          </div>
+          <div class="mapping-item" style="grid-column: 1 / -1;">
+            <label>Offer Letter Column <span style="color:#00e5b0; font-size:11px;">(PDF path or URL → output column)</span></label>
+            <select id="gecetOfferLetterCol" class="teal"></select>
+          </div>
+
+          <div class="mapping-divider">🗄️ Master Data Columns (merged by Name)</div>
+
+          <div class="mapping-item">
+            <label>Join Key in Master (Name) *</label>
+            <select id="gecetMasterJoinCol" class="teal"></select>
+          </div>
+          <div class="mapping-item">
+            <label>Email <span style="color:#6a6a80; font-size:11px;">(fallback if not in offer)</span></label>
+            <select id="gecetMasterEmailCol" class="teal"></select>
+          </div>
+          <div class="mapping-item">
+            <label>Phone <span style="color:#6a6a80; font-size:11px;">(fallback if not in offer)</span></label>
+            <select id="gecetMasterPhoneCol" class="teal"></select>
+          </div>
+          <div class="mapping-item">
+            <label>Campus <span style="color:#6a6a80; font-size:11px;">(fallback if not in offer)</span></label>
+            <select id="gecetMasterCampusCol" class="teal"></select>
+          </div>
+        </div>
+
+        <!-- Live merge preview -->
+        <div id="gecetMergePreview" style="display:none;">
+          <p style="font-size:13px; color:#9a9ab0; margin-top:16px; margin-bottom:6px;">
+            Preview of merged <strong style="color:#00e5b0;">Result</strong> column (from first row of your data):
+          </p>
+          <div class="result-preview-badge">
+            <span id="gecetPreviewResult" style="color:#ffd200; font-weight:700;">—</span>
+            <span class="pipe">|</span>
+            <span id="gecetPreviewScholarship" style="color:#f7971e; font-weight:700;">—</span>
+            <span style="color:#9a9ab0; font-size:12px; margin-left:8px;">will be written as the Result column</span>
+          </div>
+        </div>
+
+        <button class="btn-generate teal" id="gecetBtn" style="margin-top:20px;" disabled>
+          <span>⬇️</span> Download Final GECET Excel
+        </button>
+
+        <div class="error-msg" id="gecetErrorMsg"></div>
+
+        <div class="progress-section" id="gecetProgressSection" style="margin-top:16px;">
+          <div class="spinner teal"></div>
+          <div class="progress-text">Merging data and generating Excel…</div>
+        </div>
+
+        <div class="result-section" id="gecetResultSection">
+          <div class="result-success">✅</div>
+          <div class="result-msg" id="gecetResultMsg"></div>
+        </div>
+      </div>
+    </div>
+    <!-- ═══════════════════ /Final GECET Excel ═══════════════════════ -->
+
   </div>
 
   <script>
-    const pdfInput = document.getElementById('pdfInput');
-    const excelInput = document.getElementById('excelInput');
-    const slabSelect = document.getElementById('slab');
-    const pdfZone = document.getElementById('pdfZone');
-    const excelZone = document.getElementById('excelZone');
-    const pdfFilename = document.getElementById('pdfFilename');
+    // ═══════════════════════════════════════════════════════════════
+    //  SECTION 1–3 : PDF GENERATOR
+    // ═══════════════════════════════════════════════════════════════
+    const pdfInput     = document.getElementById('pdfInput');
+    const excelInput   = document.getElementById('excelInput');
+    const slabSelect   = document.getElementById('slab');
+    const pdfZone      = document.getElementById('pdfZone');
+    const excelZone    = document.getElementById('excelZone');
+    const pdfFilename  = document.getElementById('pdfFilename');
     const excelFilename = document.getElementById('excelFilename');
-    const mappingSection = document.getElementById('mappingSection');
+    const mappingSection  = document.getElementById('mappingSection');
     const generateSection = document.getElementById('generateSection');
-    const generateBtn = document.getElementById('generateBtn');
+    const generateBtn     = document.getElementById('generateBtn');
     const progressSection = document.getElementById('progressSection');
-    const resultSection = document.getElementById('resultSection');
-    const resultMsg = document.getElementById('resultMsg');
-    const errorMsg = document.getElementById('errorMsg');
-    const previewInfo = document.getElementById('previewInfo');
+    const resultSection   = document.getElementById('resultSection');
+    const resultMsg       = document.getElementById('resultMsg');
+    const errorMsg        = document.getElementById('errorMsg');
+    const previewInfo     = document.getElementById('previewInfo');
     const previewTableWrap = document.getElementById('previewTableWrap');
 
     let excelData = null;
-    let pdfReady = false;
+    let pdfReady  = false;
 
-    // File input handlers
     pdfInput.addEventListener('change', () => {
       if (pdfInput.files.length) {
         pdfFilename.textContent = pdfInput.files[0].name;
@@ -491,36 +631,27 @@
     async function loadExcelPreview() {
       const formData = new FormData();
       formData.append('excel', excelInput.files[0]);
-
       try {
-        const res = await fetch('/preview-columns', { method: 'POST', body: formData });
+        const res  = await fetch('/preview-columns', { method: 'POST', body: formData });
         const data = await res.json();
-        
-        if (data.error) {
-          showError(data.error);
-          return;
-        }
+        if (data.error) { showError(data.error); return; }
 
         excelData = data;
         previewInfo.innerHTML = `Found <strong>${data.rowCount}</strong> records with <strong>${data.columns.length}</strong> columns`;
 
-        // Populate dropdowns (added academicSession)
-        const selects = ['nameCol', 'courseCol', 'scoreCol', 'scholarshipCol', 'academicSessionCol'];
-        const autoKeys = ['name', 'course', 'score', 'scholarship', 'academicSession'];
-
+        const selects  = ['nameCol','courseCol','scoreCol','scholarshipCol','academicSessionCol'];
+        const autoKeys = ['name','course','score','scholarship','academicSession'];
         selects.forEach((selId, idx) => {
           const sel = document.getElementById(selId);
           sel.innerHTML = '<option value="">-- Select --</option>';
           data.columns.forEach(col => {
             const opt = document.createElement('option');
-            opt.value = col;
-            opt.textContent = col;
+            opt.value = col; opt.textContent = col;
             if (data.autoDetected[autoKeys[idx]] === col) opt.selected = true;
             sel.appendChild(opt);
           });
         });
 
-        // Build preview table
         if (data.sampleRows.length > 0) {
           let html = '<table class="preview-table"><thead><tr>';
           data.columns.forEach(col => { html += `<th>${col}</th>`; });
@@ -537,45 +668,33 @@
         mappingSection.classList.add('visible');
         generateSection.style.display = 'block';
         checkReady();
-
       } catch (err) {
         showError('Failed to preview Excel file: ' + err.message);
       }
     }
 
     function checkReady() {
-      const nameSelected = document.getElementById('nameCol').value;
+      const nameSelected   = document.getElementById('nameCol').value;
       const courseSelected = document.getElementById('courseCol').value;
-      const slab = slabSelect.value;
+      const slab           = slabSelect.value;
       generateBtn.disabled = !(pdfReady && excelData && nameSelected && courseSelected && slab);
     }
 
-    // Listen for mapping changes (added academicSessionCol)
-    ['nameCol', 'courseCol', 'scoreCol', 'scholarshipCol', 'academicSessionCol'].forEach(id => {
+    ['nameCol','courseCol','scoreCol','scholarshipCol','academicSessionCol'].forEach(id => {
       document.getElementById(id).addEventListener('change', checkReady);
     });
 
-    // Generate button handler
     generateBtn.addEventListener('click', async () => {
-      const nameCol = document.getElementById('nameCol').value;
-      const courseCol = document.getElementById('courseCol').value;
-      const scoreCol = document.getElementById('scoreCol').value;
-      const scholarshipCol = document.getElementById('scholarshipCol').value;
-      const academicSessionCol = document.getElementById('academicSessionCol').value; // ✅ NEW
-      const slab = slabSelect.value;
+      const nameCol            = document.getElementById('nameCol').value;
+      const courseCol          = document.getElementById('courseCol').value;
+      const scoreCol           = document.getElementById('scoreCol').value;
+      const scholarshipCol     = document.getElementById('scholarshipCol').value;
+      const academicSessionCol = document.getElementById('academicSessionCol').value;
+      const slab               = slabSelect.value;
 
-      if (!nameCol) {
-        showError('Please select the Name column mapping.');
-        return;
-      }
-      if (!courseCol) {
-        showError('Please select the Course column mapping (needed for 50k/25k filtering).');
-        return;
-      }
-      if (!slab) {
-        showError('Please select scholarship slab (50k/25k).');
-        return;
-      }
+      if (!nameCol)   { showError('Please select the Name column mapping.'); return; }
+      if (!courseCol) { showError('Please select the Course column mapping.'); return; }
+      if (!slab)      { showError('Please select scholarship slab.'); return; }
 
       hideError();
       generateBtn.disabled = true;
@@ -590,26 +709,21 @@
         formData.append('courseCol', courseCol);
         formData.append('scoreCol', scoreCol);
         formData.append('scholarshipCol', scholarshipCol);
-        formData.append('academicSessionCol', academicSessionCol); // ✅ NEW
+        formData.append('academicSessionCol', academicSessionCol);
         formData.append('slab', slab);
 
         const response = await fetch('/generate-mapped', { method: 'POST', body: formData });
-
         if (!response.ok) {
           const err = await response.json().catch(() => ({ error: 'Server error' }));
           throw new Error(err.error || 'Generation failed');
         }
 
         const generatedCount = response.headers.get('X-Generated-Count');
-
         const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'generated_pdfs.zip';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = 'generated_pdfs.zip';
+        document.body.appendChild(a); a.click(); a.remove();
         URL.revokeObjectURL(url);
 
         progressSection.classList.remove('visible');
@@ -617,7 +731,6 @@
         resultMsg.textContent = generatedCount
           ? `Generated ${generatedCount} PDFs for slab: ${slab.toUpperCase()}`
           : `PDFs generated for slab: ${slab.toUpperCase()}`;
-
       } catch (err) {
         progressSection.classList.remove('visible');
         showError(err.message);
@@ -626,45 +739,36 @@
       }
     });
 
-    function showError(msg) {
-      errorMsg.textContent = msg;
-      errorMsg.classList.add('visible');
-    }
+    function showError(msg) { errorMsg.textContent = msg; errorMsg.classList.add('visible'); }
+    function hideError()    { errorMsg.classList.remove('visible'); }
 
-    function hideError() {
-      errorMsg.classList.remove('visible');
-    }
 
-    // ===================== NEW FEATURE JS =====================
-    const studentsInput = document.getElementById('studentsInput');
-    const mappingInput = document.getElementById('mappingInput');
-    const studentsZone = document.getElementById('studentsZone');
-    const mappingZone = document.getElementById('mappingZone');
+    // ═══════════════════════════════════════════════════════════════
+    //  SECTION A : Enrich Academic Session
+    // ═══════════════════════════════════════════════════════════════
+    const studentsInput  = document.getElementById('studentsInput');
+    const mappingInput   = document.getElementById('mappingInput');
+    const studentsZone   = document.getElementById('studentsZone');
+    const mappingZone    = document.getElementById('mappingZone');
     const studentsFilename = document.getElementById('studentsFilename');
-    const mappingFilename = document.getElementById('mappingFilename');
-
+    const mappingFilename  = document.getElementById('mappingFilename');
     const enrichMappingSection = document.getElementById('enrichMappingSection');
-    const enrichPreviewInfo = document.getElementById('enrichPreviewInfo');
-    const enrichBtn = document.getElementById('enrichBtn');
-    const enrichErrorMsg = document.getElementById('enrichErrorMsg');
-    const enrichResultSection = document.getElementById('enrichResultSection');
-    const enrichResultMsg = document.getElementById('enrichResultMsg');
+    const enrichPreviewInfo    = document.getElementById('enrichPreviewInfo');
+    const enrichBtn            = document.getElementById('enrichBtn');
+    const enrichErrorMsg       = document.getElementById('enrichErrorMsg');
+    const enrichResultSection  = document.getElementById('enrichResultSection');
+    const enrichResultMsg      = document.getElementById('enrichResultMsg');
 
     let studentsPreview = null;
-    let mappingPreview = null;
+    let mappingPreview  = null;
 
-    function showEnrichError(msg) {
-      enrichErrorMsg.textContent = msg;
-      enrichErrorMsg.classList.add('visible');
-    }
-    function hideEnrichError() {
-      enrichErrorMsg.classList.remove('visible');
-    }
+    function showEnrichError(msg) { enrichErrorMsg.textContent = msg; enrichErrorMsg.classList.add('visible'); }
+    function hideEnrichError()    { enrichErrorMsg.classList.remove('visible'); }
 
     async function previewGeneric(file) {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('/preview-columns-generic', { method: 'POST', body: fd });
+      const res  = await fetch('/preview-columns-generic', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Preview failed');
       return data;
@@ -675,8 +779,7 @@
       sel.innerHTML = '<option value="">-- Select --</option>';
       for (const col of columns) {
         const opt = document.createElement('option');
-        opt.value = col;
-        opt.textContent = col;
+        opt.value = col; opt.textContent = col;
         if (autoPick && autoPick === col) opt.selected = true;
         sel.appendChild(opt);
       }
@@ -686,14 +789,7 @@
       const a = document.getElementById('studentsCourseCol').value;
       const b = document.getElementById('mappingCourseCol').value;
       const c = document.getElementById('mappingSessionCol').value;
-
-      enrichBtn.disabled = !(
-        studentsInput.files.length &&
-        mappingInput.files.length &&
-        studentsPreview &&
-        mappingPreview &&
-        a && b && c
-      );
+      enrichBtn.disabled = !(studentsInput.files.length && mappingInput.files.length && studentsPreview && mappingPreview && a && b && c);
     }
 
     studentsInput.addEventListener('change', async () => {
@@ -707,9 +803,7 @@
         enrichPreviewInfo.innerHTML = `Student file: <strong>${studentsPreview.rowCount}</strong> rows, <strong>${studentsPreview.columns.length}</strong> columns`;
         enrichMappingSection.classList.add('visible');
         checkEnrichReady();
-      } catch (e) {
-        showEnrichError(e.message);
-      }
+      } catch (e) { showEnrichError(e.message); }
     });
 
     mappingInput.addEventListener('change', async () => {
@@ -723,12 +817,10 @@
         fillSelect('mappingSessionCol', mappingPreview.columns, mappingPreview.autoDetected.academicSession || '');
         enrichMappingSection.classList.add('visible');
         checkEnrichReady();
-      } catch (e) {
-        showEnrichError(e.message);
-      }
+      } catch (e) { showEnrichError(e.message); }
     });
 
-    ['studentsCourseCol', 'mappingCourseCol', 'mappingSessionCol'].forEach(id => {
+    ['studentsCourseCol','mappingCourseCol','mappingSessionCol'].forEach(id => {
       document.getElementById(id).addEventListener('change', checkEnrichReady);
     });
 
@@ -738,16 +830,12 @@
         enrichResultSection.classList.remove('visible');
         enrichBtn.disabled = true;
 
-        const studentsCourseCol = document.getElementById('studentsCourseCol').value;
-        const mappingCourseCol = document.getElementById('mappingCourseCol').value;
-        const mappingSessionCol = document.getElementById('mappingSessionCol').value;
-
         const fd = new FormData();
         fd.append('students', studentsInput.files[0]);
-        fd.append('mapping', mappingInput.files[0]);
-        fd.append('studentsCourseCol', studentsCourseCol);
-        fd.append('mappingCourseCol', mappingCourseCol);
-        fd.append('mappingSessionCol', mappingSessionCol);
+        fd.append('mapping',  mappingInput.files[0]);
+        fd.append('studentsCourseCol', document.getElementById('studentsCourseCol').value);
+        fd.append('mappingCourseCol',  document.getElementById('mappingCourseCol').value);
+        fd.append('mappingSessionCol', document.getElementById('mappingSessionCol').value);
 
         const res = await fetch('/enrich-academic-session', { method: 'POST', body: fd });
         if (!res.ok) {
@@ -755,17 +843,13 @@
           throw new Error(err.error || 'Enrich failed');
         }
 
-        const matched = res.headers.get('X-Matched');
+        const matched   = res.headers.get('X-Matched');
         const unmatched = res.headers.get('X-Unmatched');
-
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'students_enriched_academic_session.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = 'students_enriched_academic_session.xlsx';
+        document.body.appendChild(a); a.click(); a.remove();
         URL.revokeObjectURL(url);
 
         enrichResultMsg.textContent = (matched != null && unmatched != null)
@@ -778,7 +862,186 @@
         enrichBtn.disabled = false;
       }
     });
-    // ===================== /NEW FEATURE JS =====================
+
+
+    // ═══════════════════════════════════════════════════════════════
+    //  SECTION B : FINAL GECET EXCEL
+    // ═══════════════════════════════════════════════════════════════
+    const gecetOfferInput    = document.getElementById('gecetOfferInput');
+    const gecetMasterInput   = document.getElementById('gecetMasterInput');
+    const gecetOfferZone     = document.getElementById('gecetOfferZone');
+    const gecetMasterZone    = document.getElementById('gecetMasterZone');
+    const gecetOfferFilename  = document.getElementById('gecetOfferFilename');
+    const gecetMasterFilename = document.getElementById('gecetMasterFilename');
+    const gecetMappingSection = document.getElementById('gecetMappingSection');
+    const gecetPreviewInfo    = document.getElementById('gecetPreviewInfo');
+    const gecetBtn            = document.getElementById('gecetBtn');
+    const gecetErrorMsg       = document.getElementById('gecetErrorMsg');
+    const gecetProgressSection = document.getElementById('gecetProgressSection');
+    const gecetResultSection  = document.getElementById('gecetResultSection');
+    const gecetResultMsg      = document.getElementById('gecetResultMsg');
+    const gecetMergePreview   = document.getElementById('gecetMergePreview');
+
+    let gecetOfferPreview  = null;
+    let gecetMasterPreview = null;
+
+    function showGecetError(msg) { gecetErrorMsg.textContent = msg; gecetErrorMsg.classList.add('visible'); }
+    function hideGecetError()    { gecetErrorMsg.classList.remove('visible'); }
+
+    function fillGecetSelect(selectId, columns, autoPick) {
+      const sel = document.getElementById(selectId);
+      sel.innerHTML = '<option value="">-- Select --</option>';
+      for (const col of columns) {
+        const opt = document.createElement('option');
+        opt.value = col; opt.textContent = col;
+        if (autoPick && autoPick === col) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    }
+
+    function tryShowMergePreview() {
+      if (!gecetOfferPreview) return;
+      const resultCol = document.getElementById('gecetOfferResultCol').value;
+      const scholCol  = document.getElementById('gecetOfferScholarshipCol').value;
+      if (!resultCol && !scholCol) { gecetMergePreview.style.display = 'none'; return; }
+
+      const sample = gecetOfferPreview.sampleRows[0] || {};
+      const rVal   = resultCol ? (sample[resultCol] ?? '—') : '—';
+      const sVal   = scholCol  ? (sample[scholCol]  ?? '—') : '—';
+
+      document.getElementById('gecetPreviewResult').textContent      = String(rVal);
+      document.getElementById('gecetPreviewScholarship').textContent = String(sVal);
+      gecetMergePreview.style.display = 'block';
+    }
+
+    function checkGecetReady() {
+      const nameCol = document.getElementById('gecetOfferNameCol').value;
+      gecetBtn.disabled = !(
+        gecetOfferInput.files.length &&
+        gecetMasterInput.files.length &&
+        gecetOfferPreview &&
+        gecetMasterPreview &&
+        nameCol
+      );
+    }
+
+    // Offer letter uploaded
+    gecetOfferInput.addEventListener('change', async () => {
+      if (!gecetOfferInput.files.length) return;
+      gecetOfferFilename.textContent = gecetOfferInput.files[0].name;
+      gecetOfferZone.classList.add('has-file');
+      try {
+        hideGecetError();
+        gecetOfferPreview = await previewGeneric(gecetOfferInput.files[0]);
+        const ad = gecetOfferPreview.autoDetected;
+
+        fillGecetSelect('gecetOfferNameCol',        gecetOfferPreview.columns, ad.name || '');
+        fillGecetSelect('gecetOfferCourseCol',      gecetOfferPreview.columns, ad.course || '');
+        fillGecetSelect('gecetOfferResultCol',      gecetOfferPreview.columns, ad.score || '');
+        fillGecetSelect('gecetOfferScholarshipCol', gecetOfferPreview.columns, ad.scholarship || '');
+        fillGecetSelect('gecetOfferEmailCol',       gecetOfferPreview.columns, ad.email || '');
+        fillGecetSelect('gecetOfferPhoneCol',       gecetOfferPreview.columns, ad.phone || '');
+        fillGecetSelect('gecetOfferCampusCol',      gecetOfferPreview.columns, ad.campus || '');
+        fillGecetSelect('gecetOfferLetterCol',      gecetOfferPreview.columns, ad.offerLetter || '');
+
+        gecetPreviewInfo.innerHTML = `Offer Letter: <strong class="teal">${gecetOfferPreview.rowCount}</strong> rows &nbsp;|&nbsp; <strong class="teal">${gecetOfferPreview.columns.length}</strong> columns`;
+        gecetMappingSection.classList.add('visible');
+        tryShowMergePreview();
+        checkGecetReady();
+      } catch (e) { showGecetError(e.message); }
+    });
+
+    // Master data uploaded
+    gecetMasterInput.addEventListener('change', async () => {
+      if (!gecetMasterInput.files.length) return;
+      gecetMasterFilename.textContent = gecetMasterInput.files[0].name;
+      gecetMasterZone.classList.add('has-file');
+      try {
+        hideGecetError();
+        gecetMasterPreview = await previewGeneric(gecetMasterInput.files[0]);
+        const ad = gecetMasterPreview.autoDetected;
+
+        fillGecetSelect('gecetMasterJoinCol',   gecetMasterPreview.columns, ad.name || '');
+        fillGecetSelect('gecetMasterEmailCol',  gecetMasterPreview.columns, ad.email || '');
+        fillGecetSelect('gecetMasterPhoneCol',  gecetMasterPreview.columns, ad.phone || '');
+        fillGecetSelect('gecetMasterCampusCol', gecetMasterPreview.columns, ad.campus || '');
+
+        const masterInfo = `&nbsp; Master Data: <strong class="teal">${gecetMasterPreview.rowCount}</strong> rows`;
+        gecetPreviewInfo.innerHTML = gecetOfferPreview
+          ? gecetPreviewInfo.innerHTML + masterInfo
+          : masterInfo;
+
+        gecetMappingSection.classList.add('visible');
+        checkGecetReady();
+      } catch (e) { showGecetError(e.message); }
+    });
+
+    // Watch all dropdowns
+    [
+      'gecetOfferNameCol','gecetOfferCourseCol','gecetOfferResultCol',
+      'gecetOfferScholarshipCol','gecetOfferEmailCol','gecetOfferPhoneCol',
+      'gecetOfferCampusCol','gecetOfferLetterCol',
+      'gecetMasterJoinCol','gecetMasterEmailCol','gecetMasterPhoneCol','gecetMasterCampusCol'
+    ].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => {
+        tryShowMergePreview();
+        checkGecetReady();
+      });
+    });
+
+    // Download
+    gecetBtn.addEventListener('click', async () => {
+      try {
+        hideGecetError();
+        gecetResultSection.classList.remove('visible');
+        gecetProgressSection.classList.add('visible');
+        gecetBtn.disabled = true;
+
+        const fd = new FormData();
+        fd.append('offerLetter',        gecetOfferInput.files[0]);
+        fd.append('masterData',         gecetMasterInput.files[0]);
+        fd.append('offerNameCol',        document.getElementById('gecetOfferNameCol').value);
+        fd.append('offerCourseCol',      document.getElementById('gecetOfferCourseCol').value);
+        fd.append('offerResultCol',      document.getElementById('gecetOfferResultCol').value);
+        fd.append('offerScholarshipCol', document.getElementById('gecetOfferScholarshipCol').value);
+        fd.append('offerEmailCol',       document.getElementById('gecetOfferEmailCol').value);
+        fd.append('offerPhoneCol',       document.getElementById('gecetOfferPhoneCol').value);
+        fd.append('offerCampusCol',      document.getElementById('gecetOfferCampusCol').value);
+        fd.append('offerLetterCol',      document.getElementById('gecetOfferLetterCol').value);
+        fd.append('masterJoinCol',       document.getElementById('gecetMasterJoinCol').value);
+        fd.append('masterEmailCol',      document.getElementById('gecetMasterEmailCol').value);
+        fd.append('masterPhoneCol',      document.getElementById('gecetMasterPhoneCol').value);
+        fd.append('masterCampusCol',     document.getElementById('gecetMasterCampusCol').value);
+
+        const res = await fetch('/final-gecet-excel', { method: 'POST', body: fd });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Server error' }));
+          throw new Error(err.error || 'Generation failed');
+        }
+
+        const rowCount     = res.headers.get('X-Row-Count');
+        const matchedCount = res.headers.get('X-Matched-Count');
+
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = 'final_gecet_excel.xlsx';
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+
+        gecetProgressSection.classList.remove('visible');
+        gecetResultSection.classList.add('visible');
+        gecetResultMsg.textContent = rowCount
+          ? `Done! ${rowCount} rows exported. ${matchedCount} matched with Master Data.`
+          : 'Done! final_gecet_excel.xlsx downloaded.';
+
+      } catch (e) {
+        gecetProgressSection.classList.remove('visible');
+        showGecetError(e.message);
+      } finally {
+        gecetBtn.disabled = false;
+      }
+    });
   </script>
 </body>
 </html>

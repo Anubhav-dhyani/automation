@@ -71,8 +71,15 @@ app.post('/preview-columns-generic', upload.single('file'), async (req, res) => 
       rowCount: data.length,
       sampleRows: data.slice(0, 3),
       autoDetected: {
+        name: findColumn(columns, ['registered name', 'name', 'student name', 'full name', 'candidate name']) || '',
         course: findColumn(columns, ['course', 'program', 'programme', 'department']) || '',
+        score: findColumn(columns, ['result', 'score', 'gecet score', 'marks', 'gecet']) || '',
+        scholarship: findColumn(columns, ['scholarship', 'scholarship type']) || '',
         academicSession: findColumn(columns, ['academic session', 'session', 'academic_session']) || '',
+        email: findColumn(columns, ['email', 'e-mail', 'email address', 'mail']) || '',
+        phone: findColumn(columns, ['phone', 'mobile', 'contact', 'phone number', 'mobile number']) || '',
+        campus: findColumn(columns, ['campus', 'location', 'centre', 'center']) || '',
+        offerLetter: findColumn(columns, ['offer letter', 'offer_letter', 'offerletter', 'offer letter url', 'offer letter path', 'offer url', 'pdf path', 'pdf url', 'letter url', 'letter path']) || '',
       }
     });
   } catch (error) {
@@ -230,15 +237,120 @@ app.post('/generate-mapped', upload.fields([
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────
+// FINAL GECET EXCEL — merge offer letter + master data
+// Output: Name, Email, Course, Phone, Campus, Result (merged col)
+// Result = "<result_val> | <scholarship_val>"
+// ─────────────────────────────────────────────────────────────────────
+app.post('/final-gecet-excel', upload.fields([
+  { name: 'offerLetter', maxCount: 1 },
+  { name: 'masterData',  maxCount: 1 },
+]), async (req, res) => {
+  let offerFile, masterFile;
+  try {
+    offerFile  = req.files['offerLetter']?.[0];
+    masterFile = req.files['masterData']?.[0];
+    if (!offerFile || !masterFile)
+      return res.status(400).json({ error: 'Both Offer Letter Excel and Master Data files are required.' });
+
+    const {
+      offerNameCol,
+      offerEmailCol,
+      offerCourseCol,
+      offerPhoneCol,
+      offerCampusCol,
+      offerResultCol,
+      offerScholarshipCol,
+      offerLetterCol,        // ← PDF path/URL column from Offer Letter Excel
+      masterJoinCol,
+      masterEmailCol,
+      masterPhoneCol,
+      masterCampusCol,
+    } = req.body;
+
+    if (!offerNameCol)
+      return res.status(400).json({ error: 'Offer Letter: Name column is required.' });
+
+    // ── Read files ──────────────────────────────────────────────────
+    const offerWb    = XLSX.readFile(offerFile.path);
+    const offerSheet = offerWb.Sheets[offerWb.SheetNames[0]];
+    const offerRows  = XLSX.utils.sheet_to_json(offerSheet, { defval: '' });
+    if (!offerRows.length) return res.status(400).json({ error: 'Offer Letter file is empty.' });
+
+    const masterWb    = XLSX.readFile(masterFile.path);
+    const masterSheet = masterWb.Sheets[masterWb.SheetNames[0]];
+    const masterRows  = XLSX.utils.sheet_to_json(masterSheet, { defval: '' });
+
+    // Build master lookup by join key (name-based, case-insensitive)
+    const masterMap = new Map();
+    if (masterJoinCol) {
+      for (const r of masterRows) {
+        const key = String(r[masterJoinCol] || '').toLowerCase().trim();
+        if (key && !masterMap.has(key)) masterMap.set(key, r);
+      }
+    }
+
+    let matchedCount = 0;
+
+    // ── Build output rows ───────────────────────────────────────────
+    const outRows = offerRows.map((r) => {
+      const name      = String(r[offerNameCol] || '').trim();
+      const nameKey   = name.toLowerCase();
+      const masterRow = masterMap.get(nameKey) || {};
+
+      if (Object.keys(masterRow).length) matchedCount++;
+
+      // Each field: prefer offer letter col → fall back to master col
+      const email  = (offerEmailCol  ? String(r[offerEmailCol]  || '') : '') ||
+                     (masterEmailCol  ? String(masterRow[masterEmailCol]  || '') : '');
+      const course = (offerCourseCol ? String(r[offerCourseCol] || '') : '').trim();
+      const phone  = (offerPhoneCol  ? String(r[offerPhoneCol]  || '') : '') ||
+                     (masterPhoneCol  ? String(masterRow[masterPhoneCol]  || '') : '');
+      const campus = (offerCampusCol ? String(r[offerCampusCol] || '') : '') ||
+                     (masterCampusCol ? String(masterRow[masterCampusCol] || '') : '');
+
+      const resultVal   = offerResultCol      ? String(r[offerResultCol]      || '').trim() : '';
+      const schol       = offerScholarshipCol ? String(r[offerScholarshipCol] || '').trim() : '';
+      const offerLetter = offerLetterCol      ? String(r[offerLetterCol]      || '').trim() : '';
+
+      // Merged Result: "10 | One Time"
+      const mergedResult = (resultVal && schol)
+        ? `${resultVal} | ${schol}`
+        : resultVal || schol || '';
+
+      return {
+        Name:          name,
+        Email:         email.trim(),
+        Course:        course,
+        Phone:         String(phone).trim(),
+        Campus:        campus.trim(),
+        Result:        mergedResult,
+        'Offer Letter': offerLetter,
+      };
+    });
+
+    // ── Write output ────────────────────────────────────────────────
+    const outWb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(outWb, XLSX.utils.json_to_sheet(outRows), 'Final GECET');
+    const buffer = XLSX.write(outWb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="final_gecet_excel.xlsx"');
+    res.setHeader('X-Row-Count', String(outRows.length));
+    res.setHeader('X-Matched-Count', String(matchedCount));
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('final-gecet-excel error:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    try { if (offerFile?.path)  fs.unlinkSync(offerFile.path);  } catch {}
+    try { if (masterFile?.path) fs.unlinkSync(masterFile.path); } catch {}
+  }
+});
+
 // ═══════════════════════════════════════════════════════════════════════
-//  PDF GENERATION — white-out + rewrite
-//
-//  Template page: 1080 × 1445 pts. PDF origin = BOTTOM-LEFT.
-//
-//  The floating stamp ("2026-2029" on the right side) is part of the
-//  original template. We white it out and DO NOT redraw it.
-//  The Academic Session value only appears inline in the paragraph:
-//  "...for the Academic Session <VALUE>."
+//  PDF GENERATION
 // ═══════════════════════════════════════════════════════════════════════
 
 async function generatePersonalizedPdf(templateBytes, { name, course, score, scholarship, academicSession }) {
@@ -256,24 +368,17 @@ async function generatePersonalizedPdf(templateBytes, { name, course, score, sch
   const maxW      = 820;
   const leftX     = 90;
 
-  // Use Excel value if present, otherwise keep template default
   const sessionDisplay = academicSession || '2026\u201328';
 
-  // ─── 1. NAME ────────────────────────────────────────────────────────
   page.drawRectangle({ x: 88, y: 1173, width: 700, height: 30, color: white });
   page.drawText(`Dear ${name},`, {
     x: leftX, y: 1178, size: fontSize, font: fontRegular, color: textColor
   });
 
-  // ─── 2. MAIN BODY BLOCK ─────────────────────────────────────────────
-  // White-out covers the full width of the page (x: 88 → 1070) to also
-  // erase the floating stamp that the template has on the right side.
-  // We do NOT redraw the stamp — it simply disappears.
   page.drawRectangle({ x: 88, y: 860, width: 985, height: 260, color: white });
 
   let cursorY = 1094;
 
-  // "Based on your performance... <COURSE> at"
   const segments = buildCourseBlock(course, fontSize, fontRegular, fontBold, maxW, leftX);
   for (const seg of segments) {
     for (const part of seg) {
@@ -284,7 +389,6 @@ async function generatePersonalizedPdf(templateBytes, { name, course, score, sch
     cursorY -= lineHeight;
   }
 
-  // "Graphic Era... for the Academic Session <DYNAMIC VALUE>."
   const line2Text = `Graphic Era (Deemed to be University), Dehradun, for the Academic Session ${sessionDisplay}.`;
   if (segments.needsSeparateLine2) {
     page.drawText(line2Text, {
@@ -293,7 +397,6 @@ async function generatePersonalizedPdf(templateBytes, { name, course, score, sch
     cursorY -= lineHeight;
   }
 
-  // "As a student..." paragraph
   cursorY -= paraGap;
   const para2Lines = wrapText(
     'As a student, you will gain access to experienced faculty, industry-oriented learning, research exposure, and structured career support within a performance-driven academic environment.',
@@ -306,28 +409,19 @@ async function generatePersonalizedPdf(templateBytes, { name, course, score, sch
     cursorY -= lineHeight;
   }
 
-  // GECET Score
   cursorY -= paraGap;
   page.drawText(`GECET Score: ${score}`, {
     x: leftX, y: cursorY, size: fontSize, font: fontBold, color: textColor
   });
   cursorY -= lineHeight;
 
-  // Scholarship
   page.drawText(`Scholarship: ${scholarship}`, {
     x: leftX, y: cursorY, size: fontSize, font: fontBold, color: textColor
   });
 
-  // ── Stamp is intentionally NOT redrawn ──────────────────────────────
-  // The white-out rectangle above already erased it from the template.
-
   return await pdfDoc.save();
 }
 
-/**
- * Build the "Based on your performance... <COURSE> at" block.
- * Returns array of line-segments. Sets .needsSeparateLine2.
- */
 function buildCourseBlock(course, fontSize, fontRegular, fontBold, maxW, leftX) {
   const prefix = 'Based on your performance, we are pleased to offer you provisional admission in ';
   const suffix = ' at';
@@ -348,7 +442,6 @@ function buildCourseBlock(course, fontSize, fontRegular, fontBold, maxW, leftX) 
     return lines;
   }
 
-  // Course wraps to next line
   const remainingL1 = maxW - prefixW;
   const courseWords = course.split(' ');
   let line1Course = '', line2Course = '';
@@ -383,9 +476,6 @@ function buildCourseBlock(course, fontSize, fontRegular, fontBold, maxW, leftX) 
   return lines;
 }
 
-/**
- * Simple word-wrap. Returns array of strings fitting within maxWidth.
- */
 function wrapText(text, fontSize, font, maxWidth) {
   const words = text.split(' ');
   const lines = [];
@@ -403,9 +493,6 @@ function wrapText(text, fontSize, font, maxWidth) {
   return lines;
 }
 
-/**
- * Find a column name in Excel that matches one of the expected names (case-insensitive).
- */
 function findColumn(columns, expectedNames) {
   for (const expected of expectedNames) {
     const found = columns.find(c => c.toLowerCase().trim() === expected.toLowerCase());
