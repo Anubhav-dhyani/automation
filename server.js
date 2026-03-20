@@ -187,13 +187,13 @@ app.post('/generate-mapped', upload.fields([
     const data     = XLSX.utils.sheet_to_json(sheet);
     const templateBytes = fs.readFileSync(templateFile.path);
 
-    const isBtechOrMca = (courseRaw) => {
+    const isBtechOrMba = (courseRaw) => {
       const c = String(courseRaw || '').trim().toLowerCase();
-      return /^b\s*\.?\s*tech\b/.test(c) || /^mca\b/.test(c);
+      return /^b\s*\.?\s*tech\b/.test(c) || /^mba\b/.test(c);
     };
 
     const rowsToProcess = data.filter((row) => {
-      const match = isBtechOrMca(row[courseCol]);
+      const match = isBtechOrMba(row[courseCol]);
       return slabValue === '50k' ? match : !match;
     });
 
