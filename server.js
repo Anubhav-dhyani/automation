@@ -24,7 +24,7 @@ app.post('/preview-columns', upload.fields([
 
     const workbook = XLSX.readFile(excelFile.path);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(sheet);
+    const data = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
     fs.unlinkSync(excelFile.path);
 
     if (data.length === 0) return res.status(400).json({ error: 'Excel file is empty.' });
@@ -59,7 +59,7 @@ app.post('/preview-columns-generic', upload.single('file'), async (req, res) => 
 
     const workbook = XLSX.readFile(file.path);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    const data = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
     fs.unlinkSync(file.path);
 
     if (!data.length) return res.status(400).json({ error: 'File is empty.' });
@@ -115,12 +115,12 @@ app.post('/enrich-academic-session', upload.fields([
 
     const studentsWb    = XLSX.readFile(studentsFile.path);
     const studentsSheet = studentsWb.Sheets[studentsWb.SheetNames[0]];
-    const studentsRows  = XLSX.utils.sheet_to_json(studentsSheet, { defval: '' });
+    const studentsRows  = XLSX.utils.sheet_to_json(studentsSheet, { defval: '', raw: false });
     if (!studentsRows.length) return res.status(400).json({ error: 'Student file is empty.' });
 
     const mappingWb    = XLSX.readFile(mappingFile.path);
     const mappingSheet = mappingWb.Sheets[mappingWb.SheetNames[0]];
-    const mappingRows  = XLSX.utils.sheet_to_json(mappingSheet, { defval: '' });
+    const mappingRows  = XLSX.utils.sheet_to_json(mappingSheet, { defval: '', raw: false });
     if (!mappingRows.length) return res.status(400).json({ error: 'Course Mapping file is empty.' });
 
     const courseToSession = new Map();
@@ -184,7 +184,7 @@ app.post('/generate-mapped', upload.fields([
 
     const workbook = XLSX.readFile(excelFile.path);
     const sheet    = workbook.Sheets[workbook.SheetNames[0]];
-    const data     = XLSX.utils.sheet_to_json(sheet);
+    const data     = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
     const templateBytes = fs.readFileSync(templateFile.path);
 
     const isBtechOrMba = (courseRaw) => {
@@ -274,12 +274,12 @@ app.post('/final-gecet-excel', upload.fields([
     // ── Read files ──────────────────────────────────────────────────
     const offerWb    = XLSX.readFile(offerFile.path);
     const offerSheet = offerWb.Sheets[offerWb.SheetNames[0]];
-    const offerRows  = XLSX.utils.sheet_to_json(offerSheet, { defval: '' });
+    const offerRows  = XLSX.utils.sheet_to_json(offerSheet, { defval: '', raw: false });
     if (!offerRows.length) return res.status(400).json({ error: 'Offer Letter file is empty.' });
 
     const masterWb    = XLSX.readFile(masterFile.path);
     const masterSheet = masterWb.Sheets[masterWb.SheetNames[0]];
-    const masterRows  = XLSX.utils.sheet_to_json(masterSheet, { defval: '' });
+    const masterRows  = XLSX.utils.sheet_to_json(masterSheet, { defval: '', raw: false });
 
     // Build master lookup by join key (name-based, case-insensitive)
     const masterMap = new Map();
