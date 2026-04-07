@@ -170,7 +170,7 @@ app.post('/generate-mapped', upload.fields([
     excelFile    = req.files['excel']?.[0];
     if (!templateFile || !excelFile) return res.status(400).json({ error: 'Both files are required.' });
 
-    const { nameCol, courseCol, scoreCol, scholarshipCol, academicSessionCol, slab } = req.body;
+    const { nameCol, courseCol, scoreCol, scholarshipCol, academicSessionCol, slab, instituteLine } = req.body;
 
     if (!nameCol) return res.status(400).json({ error: 'Name column is required.' });
 
@@ -221,7 +221,7 @@ app.post('/generate-mapped', upload.fields([
       console.log(`[${i + 1}/${rowsToProcess.length}] ${name} | Session: ${academicSession || 'N/A'}`);
 
       const pdfBytes = await generatePersonalizedPdf(templateBytes, {
-        name, course, score, scholarship, academicSession
+        name, course, score, scholarship, academicSession, instituteLine
       });
       const safeName = name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
       archive.append(Buffer.from(pdfBytes), { name: `${safeName}.pdf` });
@@ -353,7 +353,7 @@ app.post('/final-gecet-excel', upload.fields([
 //  PDF GENERATION
 // ═══════════════════════════════════════════════════════════════════════
 
-async function generatePersonalizedPdf(templateBytes, { name, course, score, scholarship, academicSession }) {
+async function generatePersonalizedPdf(templateBytes, { name, course, score, scholarship, academicSession, instituteLine }) {
   const pdfDoc = await PDFDocument.load(templateBytes);
   const page   = pdfDoc.getPages()[0];
 
@@ -375,11 +375,29 @@ async function generatePersonalizedPdf(templateBytes, { name, course, score, sch
     x: leftX, y: 1178, size: fontSize, font: fontRegular, color: textColor
   });
 
-  page.drawRectangle({ x: 88, y: 860, width: 985, height: 260, color: white });
-
   let cursorY = 1094;
 
   const segments = buildCourseBlock(course, fontSize, fontRegular, fontBold, maxW, leftX);
+  const instituteLineRaw = String(instituteLine || '').trim();
+  let line2Text = '';
+  if (instituteLineRaw) {
+    const tokenRegex = /\{\{\s*session\s*\}\}|\{\{\s*academicSession\s*\}\}|\{\s*session\s*\}|\{\s*academicSession\s*\}/gi;
+    const hasSessionToken = /\{\{\s*session\s*\}\}|\{\{\s*academicSession\s*\}\}|\{\s*session\s*\}|\{\s*academicSession\s*\}/i.test(instituteLineRaw);
+    line2Text = instituteLineRaw.replace(tokenRegex, sessionDisplay);
+    const hasAcademicPhrase = /academic\s+session/i.test(instituteLineRaw);
+    const hasSessionValue = sessionDisplay && instituteLineRaw.includes(sessionDisplay);
+    if (!hasSessionToken && !hasAcademicPhrase && !hasSessionValue && sessionDisplay) {
+      line2Text = `${instituteLineRaw} for the Academic Session ${sessionDisplay}.`;
+    }
+  }
+
+  const drawLine2 = segments.needsSeparateLine2 && Boolean(line2Text);
+  const linesToClear = segments.length + (drawLine2 ? 1 : 0);
+  if (linesToClear > 0) {
+    const clearTop = cursorY + 6;
+    const clearBottom = cursorY - (linesToClear * lineHeight) - 6;
+    page.drawRectangle({ x: 88, y: clearBottom, width: 985, height: clearTop - clearBottom, color: white });
+  }
   for (const seg of segments) {
     for (const part of seg) {
       page.drawText(part.text, {
@@ -389,11 +407,12 @@ async function generatePersonalizedPdf(templateBytes, { name, course, score, sch
     cursorY -= lineHeight;
   }
 
-  const line2Text = `Graphic Era (Deemed to be University), Dehradun, for the Academic Session ${sessionDisplay}.`;
   if (segments.needsSeparateLine2) {
-    page.drawText(line2Text, {
-      x: leftX, y: cursorY, size: fontSize, font: fontRegular, color: textColor
-    });
+    if (drawLine2) {
+      page.drawText(line2Text, {
+        x: leftX, y: cursorY, size: fontSize, font: fontRegular, color: textColor
+      });
+    }
     cursorY -= lineHeight;
   }
 

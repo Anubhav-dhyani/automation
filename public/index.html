@@ -155,6 +155,20 @@
     .mapping-item select.teal:focus { border-color: #00c896; }
     .mapping-item select option { background: #2a2a4a; color: #e0e0e0; }
 
+    .mapping-item input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e0e0e0;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .mapping-item input[type="text"]:focus { border-color: #f7971e; }
+
     .mapping-divider {
       grid-column: 1 / -1;
       font-size: 12px;
@@ -379,6 +393,10 @@
         <div class="mapping-item">
           <label>Academic Session Column</label>
           <select id="academicSessionCol"></select>
+        </div>
+        <div class="mapping-item" style="grid-column: 1 / -1;">
+          <label>Institute Line (optional)</label>
+          <input id="instituteLine" type="text" placeholder="Leave blank to use template text. Use {{session}} to insert the session.">
         </div>
       </div>
       <div id="previewTableWrap"></div>
@@ -607,6 +625,7 @@
     const errorMsg        = document.getElementById('errorMsg');
     const previewInfo     = document.getElementById('previewInfo');
     const previewTableWrap = document.getElementById('previewTableWrap');
+    const instituteLineInput = document.getElementById('instituteLine');
 
     let excelData = null;
     let pdfReady  = false;
@@ -691,6 +710,7 @@
       const scholarshipCol     = document.getElementById('scholarshipCol').value;
       const academicSessionCol = document.getElementById('academicSessionCol').value;
       const slab               = slabSelect.value;
+      const instituteLine      = instituteLineInput.value.trim();
 
       if (!nameCol)   { showError('Please select the Name column mapping.'); return; }
       if (!courseCol) { showError('Please select the Course column mapping.'); return; }
@@ -710,6 +730,7 @@
         formData.append('scoreCol', scoreCol);
         formData.append('scholarshipCol', scholarshipCol);
         formData.append('academicSessionCol', academicSessionCol);
+        formData.append('instituteLine', instituteLine);
         formData.append('slab', slab);
 
         const response = await fetch('/generate-mapped', { method: 'POST', body: formData });
