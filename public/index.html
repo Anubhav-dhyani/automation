@@ -394,6 +394,10 @@
           <label>Academic Session Column</label>
           <select id="academicSessionCol"></select>
         </div>
+        <div class="mapping-item">
+          <label>University Column</label>
+          <select id="universityCol"></select>
+        </div>
         <div class="mapping-item" style="grid-column: 1 / -1;">
           <label>Institute Line (optional)</label>
           <input id="instituteLine" type="text" placeholder="Leave blank to use template text. Use {{session}} to insert the session.">
@@ -658,8 +662,8 @@
         excelData = data;
         previewInfo.innerHTML = `Found <strong>${data.rowCount}</strong> records with <strong>${data.columns.length}</strong> columns`;
 
-        const selects  = ['nameCol','courseCol','scoreCol','scholarshipCol','academicSessionCol'];
-        const autoKeys = ['name','course','score','scholarship','academicSession'];
+        const selects  = ['nameCol','courseCol','scoreCol','scholarshipCol','academicSessionCol','universityCol'];
+        const autoKeys = ['name','course','score','scholarship','academicSession','university'];
         selects.forEach((selId, idx) => {
           const sel = document.getElementById(selId);
           sel.innerHTML = '<option value="">-- Select --</option>';
@@ -699,7 +703,7 @@
       generateBtn.disabled = !(pdfReady && excelData && nameSelected && courseSelected && slab);
     }
 
-    ['nameCol','courseCol','scoreCol','scholarshipCol','academicSessionCol'].forEach(id => {
+    ['nameCol','courseCol','scoreCol','scholarshipCol','academicSessionCol','universityCol'].forEach(id => {
       document.getElementById(id).addEventListener('change', checkReady);
     });
 
@@ -709,6 +713,7 @@
       const scoreCol           = document.getElementById('scoreCol').value;
       const scholarshipCol     = document.getElementById('scholarshipCol').value;
       const academicSessionCol = document.getElementById('academicSessionCol').value;
+      const universityCol     = document.getElementById('universityCol').value;
       const slab               = slabSelect.value;
       const instituteLine      = instituteLineInput.value.trim();
 
@@ -730,6 +735,7 @@
         formData.append('scoreCol', scoreCol);
         formData.append('scholarshipCol', scholarshipCol);
         formData.append('academicSessionCol', academicSessionCol);
+        formData.append('universityCol', universityCol);
         formData.append('instituteLine', instituteLine);
         formData.append('slab', slab);
 

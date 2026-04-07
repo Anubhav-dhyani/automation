@@ -40,7 +40,8 @@ app.post('/preview-columns', upload.fields([
         course: findColumn(columns, ['course', 'program', 'programme', 'department']) || '',
         score: findColumn(columns, ['result', 'score', 'gecet score', 'marks', 'gecet']) || '',
         scholarship: findColumn(columns, ['scholarship', 'scholarship type']) || '',
-        academicSession: findColumn(columns, ['academic session', 'session', 'academic_session', 'academ session']) || ''
+        academicSession: findColumn(columns, ['academic session', 'session', 'academic_session', 'academ session']) || '',
+        university: findColumn(columns, ['university', 'institute', 'college', 'campus', 'campus name']) || ''
       }
     });
   } catch (error) {
@@ -76,6 +77,7 @@ app.post('/preview-columns-generic', upload.single('file'), async (req, res) => 
         score: findColumn(columns, ['result', 'score', 'gecet score', 'marks', 'gecet']) || '',
         scholarship: findColumn(columns, ['scholarship', 'scholarship type']) || '',
         academicSession: findColumn(columns, ['academic session', 'session', 'academic_session']) || '',
+        university: findColumn(columns, ['university', 'institute', 'college', 'campus', 'campus name']) || '',
         email: findColumn(columns, ['email', 'e-mail', 'email address', 'mail']) || '',
         phone: findColumn(columns, ['phone', 'mobile', 'contact', 'phone number', 'mobile number']) || '',
         campus: findColumn(columns, ['campus', 'location', 'centre', 'center']) || '',
@@ -170,7 +172,7 @@ app.post('/generate-mapped', upload.fields([
     excelFile    = req.files['excel']?.[0];
     if (!templateFile || !excelFile) return res.status(400).json({ error: 'Both files are required.' });
 
-    const { nameCol, courseCol, scoreCol, scholarshipCol, academicSessionCol, slab, instituteLine } = req.body;
+    const { nameCol, courseCol, scoreCol, scholarshipCol, academicSessionCol, slab, instituteLine, universityCol } = req.body;
 
     if (!nameCol) return res.status(400).json({ error: 'Name column is required.' });
 
@@ -216,12 +218,14 @@ app.post('/generate-mapped', upload.fields([
       const score           = scoreCol           ? String(row[scoreCol]           || '').trim() : '';
       const scholarship     = scholarshipCol     ? String(row[scholarshipCol]     || '').trim() : '';
       const academicSession = academicSessionCol ? String(row[academicSessionCol] || '').trim() : '';
+      const universityVal   = universityCol ? String(row[universityCol] || '').trim() : '';
+      const instituteLineFinal = universityVal || String(instituteLine || '').trim();
 
       if (!name) continue;
       console.log(`[${i + 1}/${rowsToProcess.length}] ${name} | Session: ${academicSession || 'N/A'}`);
 
       const pdfBytes = await generatePersonalizedPdf(templateBytes, {
-        name, course, score, scholarship, academicSession, instituteLine
+        name, course, score, scholarship, academicSession, instituteLine: instituteLineFinal
       });
       const safeName = name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
       archive.append(Buffer.from(pdfBytes), { name: `${safeName}.pdf` });
@@ -374,6 +378,9 @@ async function generatePersonalizedPdf(templateBytes, { name, course, score, sch
   page.drawText(`Dear ${name},`, {
     x: leftX, y: 1178, size: fontSize, font: fontRegular, color: textColor
   });
+
+  // Clear the body text area so we don't overlap the template text.
+  page.drawRectangle({ x: 88, y: 860, width: 985, height: 260, color: white });
 
   let cursorY = 1094;
 
